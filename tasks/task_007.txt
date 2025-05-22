@@ -1,0 +1,104 @@
+# Task ID: 7
+# Title: Implement Advanced Configuration Options
+# Status: done
+# Dependencies: 2, 3
+# Priority: medium
+# Description: Enhance the connection configuration with advanced options for buffer sizes, transfer modes, encoding, and proxy settings.
+# Details:
+1. Implement detailed timeout settings (connection, data, control)
+2. Add buffer size configuration for optimized transfers
+3. Create transfer mode options (ASCII/Binary)
+4. Implement encoding configuration
+5. Add advanced proxy settings
+6. Create SSL/TLS configuration options
+
+Code additions:
+```java
+// Additional property descriptors
+private static final PropertyDescriptor BUFFER_SIZE = new PropertyDescriptor.Builder()
+    .name("Buffer Size")
+    .description("Size of the buffer to use for file transfers")
+    .required(true)
+    .defaultValue("1048576") // 1MB
+    .addValidator(StandardValidators.DATA_SIZE_VALIDATOR)
+    .build();
+
+private static final PropertyDescriptor CONTROL_ENCODING = new PropertyDescriptor.Builder()
+    .name("Control Encoding")
+    .description("The encoding to use for the control channel")
+    .required(true)
+    .defaultValue("UTF-8")
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
+private static final PropertyDescriptor TRANSFER_MODE = new PropertyDescriptor.Builder()
+    .name("Transfer Mode")
+    .description("The transfer mode to use for file transfers")
+    .required(true)
+    .allowableValues("ASCII", "Binary")
+    .defaultValue("Binary")
+    .build();
+
+private static final PropertyDescriptor USE_IMPLICIT_SSL = new PropertyDescriptor.Builder()
+    .name("Use Implicit SSL")
+    .description("Whether to use Implicit SSL for the connection")
+    .required(true)
+    .allowableValues("true", "false")
+    .defaultValue("false")
+    .build();
+
+// Proxy configuration
+private static final PropertyDescriptor PROXY_HOST = new PropertyDescriptor.Builder()
+    .name("Proxy Host")
+    .description("The hostname of the proxy server")
+    .required(false)
+    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+    .build();
+
+// Implementation in connection creation
+public FTPClient createConnection() throws IOException {
+    FTPClient client = new FTPClient();
+    
+    // Configure client based on config
+    client.setConnectTimeout(config.getConnectionTimeout());
+    client.setDataTimeout(config.getDataTimeout());
+    client.setControlEncoding(config.getControlEncoding());
+    client.setBufferSize(config.getBufferSize());
+    
+    // Configure proxy if needed
+    if (config.getProxyHost() != null && !config.getProxyHost().isEmpty()) {
+        Proxy proxy = new Proxy(Proxy.Type.SOCKS, 
+            new InetSocketAddress(config.getProxyHost(), config.getProxyPort()));
+        client.setSocketFactory(new ProxySocketFactory(proxy));
+    }
+    
+    // Configure SSL if needed
+    if (config.isUseImplicitSSL()) {
+        client = new FTPSClient(true);
+        // Configure SSL parameters
+    } else if (config.isUseExplicitSSL()) {
+        client = new FTPSClient(false);
+        // Configure SSL parameters
+    }
+    
+    // Connect and configure
+    // ...
+    
+    // Set transfer mode
+    if ("ASCII".equals(config.getTransferMode())) {
+        client.setFileType(FTP.ASCII_FILE_TYPE);
+    } else {
+        client.setFileType(FTP.BINARY_FILE_TYPE);
+    }
+    
+    return client;
+}
+```
+
+# Test Strategy:
+1. Test buffer size configuration impact on transfer performance
+2. Verify transfer mode settings (ASCII vs Binary)
+3. Test encoding configuration with various character sets
+4. Verify proxy configuration with mock proxy server
+5. Test SSL/TLS configuration with secure FTP server
+6. Verify proper application of all advanced settings

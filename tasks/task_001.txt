@@ -1,0 +1,80 @@
+# Task ID: 1
+# Title: Implement Basic FTP Connection Controller
+# Status: done
+# Dependencies: None
+# Priority: high
+# Description: Create the foundation for the Persistent FTP Connection Controller Service by extending AbstractControllerService and implementing the core interfaces.
+# Details:
+1. Create a new class `PersistentFTPConnectionService` that extends `AbstractControllerService` and implements `PersistentFTPService`
+2. Define all required property descriptors (hostname, port, username, password, etc.)
+3. Implement property validation logic
+4. Create basic service lifecycle methods (onEnabled, onDisabled)
+5. Implement basic connection testing functionality
+6. Set up logging framework
+
+Code structure:
+```java
+@Tags({"ftp", "connection", "pool", "persistent"})
+@CapabilityDescription("Provides persistent FTP connection management with connection pooling, health monitoring, and optimized operations.")
+public class PersistentFTPConnectionService extends AbstractControllerService implements PersistentFTPService {
+    // Property descriptors
+    public static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder()
+        .name("Hostname")
+        .description("The hostname of the FTP server")
+        .required(true)
+        .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+        .build();
+    
+    // Additional property descriptors
+    
+    private volatile boolean initialized = false;
+    
+    @Override
+    protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {
+        // Return list of property descriptors
+    }
+    
+    @Override
+    protected void init(ControllerServiceInitializationContext context) {
+        // Initialize service
+    }
+    
+    @Override
+    public boolean testConnection() {
+        // Implement basic connection test
+    }
+}
+```
+
+# Test Strategy:
+1. Unit test the property validation logic with valid and invalid configurations
+2. Test service initialization and shutdown
+3. Create mock FTP server using MockFtpServer library to test basic connection
+4. Verify proper error handling for connection failures
+5. Test service lifecycle methods (onEnabled, onDisabled)
+
+# Subtasks:
+## 1. Implement FTP Connection Controller class structure [done]
+### Dependencies: None
+### Description: Create the basic class structure for the FTP Connection Controller implementing required interfaces and defining core attributes.
+### Details:
+Create the FTPConnectionController class that implements necessary interfaces. Define class-level variables for connection parameters (host, port, username, password, etc.). Set up constructor and basic initialization logic. Implement interface method signatures that will be filled in later subtasks.
+
+## 2. Implement property descriptors and configuration [done]
+### Dependencies: 1.1
+### Description: Define and implement property descriptors for all FTP connection parameters with appropriate metadata.
+### Details:
+Create property descriptors for host, port, username, password, and other FTP connection parameters. Include appropriate metadata like display name, description, default values, and validation constraints. Implement getter and setter methods for each property. Ensure properties are properly documented with JSDoc comments.
+
+## 3. Implement validation logic [done]
+### Dependencies: 1.2
+### Description: Add validation logic to ensure all connection parameters are valid before attempting connection.
+### Details:
+Implement validation methods to check for required fields (host, username, password). Add validation for port number range (typically 0-65535). Create validation for connection timeout values. Implement error handling with appropriate error messages for validation failures. Add unit tests for validation logic.
+
+## 4. Implement service lifecycle methods [done]
+### Dependencies: 1.3
+### Description: Implement connection lifecycle methods including connect, disconnect, and status checking.
+### Details:
+Implement connect() method that establishes FTP connection using validated parameters. Create disconnect() method to properly close connections and clean up resources. Add isConnected() method to check connection status. Implement error handling for connection failures. Add logging for connection events. Create unit tests for lifecycle methods.
+

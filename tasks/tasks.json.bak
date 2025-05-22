@@ -1,0 +1,492 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Implement Basic FTP Connection Controller",
+      "description": "Create the foundation for the Persistent FTP Connection Controller Service by extending AbstractControllerService and implementing the core interfaces.",
+      "details": "1. Create a new class `PersistentFTPConnectionService` that extends `AbstractControllerService` and implements `PersistentFTPService`\n2. Define all required property descriptors (hostname, port, username, password, etc.)\n3. Implement property validation logic\n4. Create basic service lifecycle methods (onEnabled, onDisabled)\n5. Implement basic connection testing functionality\n6. Set up logging framework\n\nCode structure:\n```java\n@Tags({\"ftp\", \"connection\", \"pool\", \"persistent\"})\n@CapabilityDescription(\"Provides persistent FTP connection management with connection pooling, health monitoring, and optimized operations.\")\npublic class PersistentFTPConnectionService extends AbstractControllerService implements PersistentFTPService {\n    // Property descriptors\n    public static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder()\n        .name(\"Hostname\")\n        .description(\"The hostname of the FTP server\")\n        .required(true)\n        .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)\n        .build();\n    \n    // Additional property descriptors\n    \n    private volatile boolean initialized = false;\n    \n    @Override\n    protected List<PropertyDescriptor> getSupportedPropertyDescriptors() {\n        // Return list of property descriptors\n    }\n    \n    @Override\n    protected void init(ControllerServiceInitializationContext context) {\n        // Initialize service\n    }\n    \n    @Override\n    public boolean testConnection() {\n        // Implement basic connection test\n    }\n}\n```",
+      "testStrategy": "1. Unit test the property validation logic with valid and invalid configurations\n2. Test service initialization and shutdown\n3. Create mock FTP server using MockFtpServer library to test basic connection\n4. Verify proper error handling for connection failures\n5. Test service lifecycle methods (onEnabled, onDisabled)",
+      "priority": "high",
+      "dependencies": [],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement FTP Connection Controller class structure",
+          "description": "Create the basic class structure for the FTP Connection Controller implementing required interfaces and defining core attributes.",
+          "dependencies": [],
+          "details": "Create the FTPConnectionController class that implements necessary interfaces. Define class-level variables for connection parameters (host, port, username, password, etc.). Set up constructor and basic initialization logic. Implement interface method signatures that will be filled in later subtasks.",
+          "status": "in-progress"
+        },
+        {
+          "id": 2,
+          "title": "Implement property descriptors and configuration",
+          "description": "Define and implement property descriptors for all FTP connection parameters with appropriate metadata.",
+          "dependencies": [
+            1
+          ],
+          "details": "Create property descriptors for host, port, username, password, and other FTP connection parameters. Include appropriate metadata like display name, description, default values, and validation constraints. Implement getter and setter methods for each property. Ensure properties are properly documented with JSDoc comments.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement validation logic",
+          "description": "Add validation logic to ensure all connection parameters are valid before attempting connection.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement validation methods to check for required fields (host, username, password). Add validation for port number range (typically 0-65535). Create validation for connection timeout values. Implement error handling with appropriate error messages for validation failures. Add unit tests for validation logic.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement service lifecycle methods",
+          "description": "Implement connection lifecycle methods including connect, disconnect, and status checking.",
+          "dependencies": [
+            3
+          ],
+          "details": "Implement connect() method that establishes FTP connection using validated parameters. Create disconnect() method to properly close connections and clean up resources. Add isConnected() method to check connection status. Implement error handling for connection failures. Add logging for connection events. Create unit tests for lifecycle methods.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Implement Connection Configuration",
+      "description": "Create comprehensive connection configuration options for the FTP service, including all required parameters from the Connection Configuration Model.",
+      "details": "1. Implement all connection configuration properties from the PRD's Connection Configuration Model\n2. Create property descriptors with appropriate validators\n3. Implement configuration validation logic\n4. Create configuration object model to encapsulate settings\n5. Add support for dynamic properties\n6. Implement secure handling of credentials\n\nConfiguration properties to implement:\n- hostname, port\n- username, password\n- connectionTimeout, dataTimeout\n- activeMode flag\n- bufferSize\n- controlEncoding\n- useClientMode, useImplicitSSL\n- maxConnectionsPerHost\n- keepAliveInterval, connectionIdleTimeout\n- proxy configuration (host, port, username, password)\n\nCode example:\n```java\nprivate static final PropertyDescriptor CONNECTION_TIMEOUT = new PropertyDescriptor.Builder()\n    .name(\"Connection Timeout\")\n    .description(\"The amount of time to wait when connecting to the FTP server before timing out\")\n    .required(true)\n    .defaultValue(\"30000\")\n    .addValidator(StandardValidators.TIME_PERIOD_VALIDATOR)\n    .build();\n\nprivate static final PropertyDescriptor ACTIVE_MODE = new PropertyDescriptor.Builder()\n    .name(\"Active Mode\")\n    .description(\"Whether to use active mode for the FTP connection\")\n    .required(true)\n    .allowableValues(\"true\", \"false\")\n    .defaultValue(\"false\")\n    .build();\n\npublic class FTPConnectionConfig {\n    private final String hostname;\n    private final int port;\n    private final String username;\n    private final String password;\n    private final int connectionTimeout;\n    // Additional fields\n    \n    // Constructor, getters, etc.\n}\n```",
+      "testStrategy": "1. Unit test property validation with boundary values\n2. Test configuration object creation with various combinations of settings\n3. Verify secure handling of credentials\n4. Test dynamic property handling\n5. Verify configuration validation logic correctly identifies invalid combinations",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Basic Connection Properties",
+          "description": "Define and implement the essential connection properties required for basic connectivity, including host, port, protocol, and timeout settings.",
+          "dependencies": [],
+          "details": "Create property descriptors for fundamental connection settings. Implement getters and setters for each property. Define appropriate default values and data types. Include basic type checking for each property. Document each property with clear descriptions of purpose and expected values.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement Advanced Connection Properties",
+          "description": "Define and implement advanced connection properties such as retry logic, connection pooling, custom headers, and protocol-specific options.",
+          "dependencies": [
+            1
+          ],
+          "details": "Build on the basic properties framework. Implement complex property types with nested structures where needed. Add configuration options for performance tuning. Include properties for debugging and logging levels. Ensure backward compatibility with any existing configuration systems.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Develop Validation Logic",
+          "description": "Create comprehensive validation rules for all connection properties, including type checking, range validation, format validation, and interdependent property validation.",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implement validators for each property type. Create logic for validating interdependent properties. Build a validation pipeline that can be executed before connection attempts. Develop clear error messages for validation failures. Include support for custom validation rules.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement Secure Credential Handling",
+          "description": "Develop secure storage and retrieval mechanisms for sensitive connection credentials like passwords, API keys, and tokens.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement encryption for stored credentials. Create secure input methods for credential collection. Develop masking functionality for displaying credentials in logs or UI. Integrate with system credential stores where available. Implement credential rotation and expiration handling.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Create Configuration Object Model",
+          "description": "Build a comprehensive object model that encapsulates all connection configuration properties and provides a clean API for the rest of the application.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Design an immutable configuration object. Implement builder pattern for configuration creation. Create serialization/deserialization support for configuration persistence. Develop factory methods for common configuration scenarios. Include comprehensive documentation and usage examples.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Implement Single Connection Management",
+      "description": "Create the core connection management functionality for establishing, validating, and closing individual FTP connections.",
+      "details": "1. Implement connection creation logic using Apache Commons Net FTPClient\n2. Create connection validation mechanism\n3. Implement proper connection close handling\n4. Add reconnection logic with exponential backoff\n5. Create connection state tracking\n6. Implement error handling for connection operations\n\nCode structure:\n```java\npublic class FTPConnectionManager {\n    private final FTPConnectionConfig config;\n    private final ComponentLog logger;\n    \n    public FTPConnectionManager(FTPConnectionConfig config, ComponentLog logger) {\n        this.config = config;\n        this.logger = logger;\n    }\n    \n    public FTPClient createConnection() throws IOException {\n        FTPClient client = new FTPClient();\n        try {\n            // Configure client based on config\n            client.setConnectTimeout(config.getConnectionTimeout());\n            client.setDataTimeout(config.getDataTimeout());\n            client.setControlEncoding(config.getControlEncoding());\n            \n            // Connect to server\n            client.connect(config.getHostname(), config.getPort());\n            int reply = client.getReplyCode();\n            if (!FTPReply.isPositiveCompletion(reply)) {\n                client.disconnect();\n                throw new IOException(\"FTP server refused connection\");\n            }\n            \n            // Login\n            if (!client.login(config.getUsername(), config.getPassword())) {\n                client.disconnect();\n                throw new IOException(\"Could not login to FTP server\");\n            }\n            \n            // Configure connection mode\n            if (config.isActiveMode()) {\n                client.enterLocalActiveMode();\n            } else {\n                client.enterLocalPassiveMode();\n            }\n            \n            // Additional configuration\n            \n            return client;\n        } catch (IOException e) {\n            if (client.isConnected()) {\n                try {\n                    client.disconnect();\n                } catch (IOException disconnectException) {\n                    // Log disconnect exception\n                }\n            }\n            throw e;\n        }\n    }\n    \n    public boolean validateConnection(FTPClient client) {\n        try {\n            return client.sendNoOp();\n        } catch (IOException e) {\n            return false;\n        }\n    }\n    \n    public void closeConnection(FTPClient client) {\n        if (client != null && client.isConnected()) {\n            try {\n                client.logout();\n            } catch (IOException e) {\n                // Log exception\n            } finally {\n                try {\n                    client.disconnect();\n                } catch (IOException e) {\n                    // Log exception\n                }\n            }\n        }\n    }\n}\n```",
+      "testStrategy": "1. Test connection creation with mock FTP server\n2. Verify proper configuration of FTPClient based on settings\n3. Test connection validation with both valid and invalid connections\n4. Verify proper cleanup during connection close\n5. Test reconnection logic with simulated failures\n6. Verify error handling for various connection scenarios",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement connection creation and initialization",
+          "description": "Create methods to establish a new FTP connection with proper initialization of the FTPClient object",
+          "dependencies": [],
+          "details": "Implement connect() method that initializes FTPClient, sets necessary parameters (timeout, buffer size, etc.), and establishes connection to the server. Include proper parameter validation and initial configuration. Document all connection parameters.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement connection validation and testing",
+          "description": "Create methods to validate if a connection is active and functioning properly",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement isConnected() and testConnection() methods that check if the connection is still valid. Handle cases where the connection appears active but has timed out on the server side. Include NOOP command implementation to test connection liveness.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement connection state tracking",
+          "description": "Create a robust mechanism to track the current state of the FTP connection",
+          "dependencies": [
+            1,
+            2
+          ],
+          "details": "Implement a state machine or enum-based tracking system that maintains the current connection state (DISCONNECTED, CONNECTING, CONNECTED, FAILED, etc.). Ensure thread-safety for state transitions and provide methods to query current state.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement connection closing and cleanup",
+          "description": "Create methods to properly close an FTP connection and clean up resources",
+          "dependencies": [
+            1,
+            3
+          ],
+          "details": "Implement disconnect() method that properly logs out from the FTP server, closes the connection, and releases all resources. Handle cases where the connection is already closed or in an error state. Update connection state accordingly.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement reconnection logic",
+          "description": "Create robust reconnection mechanism to handle connection drops and failures",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Implement reconnect() method that attempts to reestablish a dropped connection with exponential backoff. Include maximum retry count, retry delay configuration, and proper state transitions during reconnection attempts. Handle authentication during reconnection.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Implement comprehensive error handling",
+          "description": "Create error handling mechanisms for all connection-related operations",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "Implement exception handling for all connection operations. Create custom exception types for different failure scenarios (authentication failure, network error, timeout, etc.). Add logging for all connection events and errors. Ensure errors are properly propagated or handled based on severity.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Implement Connection Pool",
+      "description": "Create a robust connection pooling mechanism to manage multiple FTP connections efficiently according to the Connection Pool Model.",
+      "details": "1. Implement connection pool using Apache Commons Pool2\n2. Create custom FTPClientFactory for connection creation\n3. Implement connection validation and eviction policies\n4. Create thread-safe connection borrowing and returning mechanisms\n5. Add connection tagging for tracking and metrics\n6. Implement pool configuration based on service properties\n\nCode structure:\n```java\npublic class FTPConnectionPool implements FTPConnectionPool {\n    private final GenericObjectPool<FTPClient> pool;\n    private final FTPConnectionManager connectionManager;\n    private final ComponentLog logger;\n    \n    public FTPConnectionPool(FTPConnectionConfig config, ComponentLog logger) {\n        this.connectionManager = new FTPConnectionManager(config, logger);\n        this.logger = logger;\n        \n        // Create pool factory\n        FTPClientFactory factory = new FTPClientFactory(connectionManager);\n        \n        // Configure pool\n        GenericObjectPoolConfig<FTPClient> poolConfig = new GenericObjectPoolConfig<>();\n        poolConfig.setMaxTotal(config.getMaxConnectionsPerHost());\n        poolConfig.setMinIdle(config.getMinConnections());\n        poolConfig.setMaxIdle(config.getMaxConnections() / 2);\n        poolConfig.setTestOnBorrow(true);\n        poolConfig.setTestOnReturn(true);\n        poolConfig.setTimeBetweenEvictionRunsMillis(config.getConnectionTestInterval());\n        poolConfig.setMinEvictableIdleTimeMillis(config.getConnectionIdleTimeout());\n        \n        // Create pool\n        this.pool = new GenericObjectPool<>(factory, poolConfig);\n    }\n    \n    @Override\n    public FTPClient borrowConnection() throws IOException {\n        try {\n            return pool.borrowObject();\n        } catch (Exception e) {\n            if (e instanceof IOException) {\n                throw (IOException) e;\n            } else {\n                throw new IOException(\"Could not borrow FTP connection from pool\", e);\n            }\n        }\n    }\n    \n    @Override\n    public void returnConnection(FTPClient client) {\n        if (client != null) {\n            pool.returnObject(client);\n        }\n    }\n    \n    @Override\n    public void invalidateConnection(FTPClient client) {\n        if (client != null) {\n            try {\n                pool.invalidateObject(client);\n            } catch (Exception e) {\n                logger.warn(\"Error invalidating FTP connection: {}\", e);\n            }\n        }\n    }\n    \n    @Override\n    public int getActiveConnectionCount() {\n        return pool.getNumActive();\n    }\n    \n    @Override\n    public int getIdleConnectionCount() {\n        return pool.getNumIdle();\n    }\n    \n    @Override\n    public Map<String, Object> getPoolMetrics() {\n        Map<String, Object> metrics = new HashMap<>();\n        metrics.put(\"activeConnections\", pool.getNumActive());\n        metrics.put(\"idleConnections\", pool.getNumIdle());\n        metrics.put(\"maxConnections\", pool.getMaxTotal());\n        metrics.put(\"minConnections\", pool.getMinIdle());\n        // Additional metrics\n        return metrics;\n    }\n    \n    @Override\n    public void shutdown() {\n        pool.close();\n    }\n    \n    // Factory class for creating FTP connections\n    private static class FTPClientFactory extends BasePooledObjectFactory<FTPClient> {\n        private final FTPConnectionManager connectionManager;\n        \n        public FTPClientFactory(FTPConnectionManager connectionManager) {\n            this.connectionManager = connectionManager;\n        }\n        \n        @Override\n        public FTPClient create() throws Exception {\n            return connectionManager.createConnection();\n        }\n        \n        @Override\n        public PooledObject<FTPClient> wrap(FTPClient client) {\n            return new DefaultPooledObject<>(client);\n        }\n        \n        @Override\n        public boolean validateObject(PooledObject<FTPClient> pooledObject) {\n            return connectionManager.validateConnection(pooledObject.getObject());\n        }\n        \n        @Override\n        public void destroyObject(PooledObject<FTPClient> pooledObject) throws Exception {\n            connectionManager.closeConnection(pooledObject.getObject());\n        }\n    }\n}\n```",
+      "testStrategy": "1. Test connection pool initialization with various configurations\n2. Verify proper borrowing and returning of connections\n3. Test connection validation during borrowing\n4. Verify connection invalidation and recreation\n5. Test pool metrics accuracy\n6. Verify thread safety with concurrent connection requests\n7. Test pool shutdown and resource cleanup",
+      "priority": "high",
+      "dependencies": [
+        3
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Pool Configuration",
+          "description": "Define and implement the configuration class for the connection pool with customizable parameters.",
+          "dependencies": [],
+          "details": "Create a configuration class that allows setting of max connections, idle time, validation interval, and other pool parameters. Include builder pattern for easy configuration. Implement sensible defaults for all parameters. Document each configuration option with clear explanations of its impact on pool behavior.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Create Connection Factory",
+          "description": "Implement a factory class that creates, validates, and destroys connection objects for the pool.",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement PooledObjectFactory interface from Commons Pool2. Create methods for makeObject(), validateObject(), activateObject(), passivateObject(), and destroyObject(). Handle connection creation errors gracefully. Ensure proper resource cleanup in the destroy method.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement Validation Policies",
+          "description": "Create validation mechanisms to test connections for validity before providing them to clients.",
+          "dependencies": [
+            2
+          ],
+          "details": "Implement connection validation logic in validateObject(). Create test query mechanism for database connections. Add idle connection validation. Implement connection age validation. Create eviction policy for stale connections. Handle validation failures with appropriate logging.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Ensure Thread-Safe Operations",
+          "description": "Implement thread-safe mechanisms for borrowing, returning, and managing connections in the pool.",
+          "dependencies": [
+            2,
+            3
+          ],
+          "details": "Use GenericObjectPool from Commons Pool2 for thread-safe operations. Implement proper synchronization for custom methods. Create timeout handling for connection borrowing. Implement deadlock prevention mechanisms. Add logging for concurrent access patterns.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Add Connection Tagging Support",
+          "description": "Implement a system to tag connections with metadata for tracking and specialized usage.",
+          "dependencies": [
+            2,
+            4
+          ],
+          "details": "Create a tagging mechanism to associate metadata with connections. Implement methods to borrow connections with specific tags. Add support for tag-based connection selection. Create tag statistics collection. Document tagging API for users.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Implement Metrics Collection",
+          "description": "Add comprehensive metrics collection to monitor pool health and performance.",
+          "dependencies": [
+            4
+          ],
+          "details": "Implement counters for active, idle, and total connections. Add timing metrics for connection acquisition. Create utilization percentage calculation. Implement periodic metrics logging. Add JMX support for metrics exposure. Create alerting thresholds for pool exhaustion.",
+          "status": "pending"
+        },
+        {
+          "id": 7,
+          "title": "Create Pool Shutdown Procedures",
+          "description": "Implement graceful shutdown mechanisms for the connection pool.",
+          "dependencies": [
+            4,
+            6
+          ],
+          "details": "Create methods for immediate and graceful pool shutdown. Implement connection cleanup during shutdown. Add shutdown hooks for JVM termination. Create timeout handling for shutdown operations. Implement proper resource release verification. Add logging for shutdown process.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Implement Connection Health Management",
+      "description": "Create a comprehensive connection health monitoring system to ensure connections remain valid and are automatically repaired when issues occur.",
+      "details": "1. Implement the FTPConnectionHealth interface\n2. Create connection testing mechanism\n3. Implement automatic repair for failed connections\n4. Add keep-alive functionality for idle connections\n5. Create connection status tracking and history\n6. Implement health status reporting\n\nCode structure:\n```java\npublic class FTPConnectionHealthManager implements FTPConnectionHealth {\n    private final FTPConnectionManager connectionManager;\n    private final ComponentLog logger;\n    private final AtomicLong lastSuccessfulConnectionTime = new AtomicLong(0);\n    private final ConcurrentLinkedQueue<String> connectionErrorHistory = new ConcurrentLinkedQueue<>();\n    private final int maxErrorHistorySize = 100;\n    \n    public FTPConnectionHealthManager(FTPConnectionManager connectionManager, ComponentLog logger) {\n        this.connectionManager = connectionManager;\n        this.logger = logger;\n    }\n    \n    @Override\n    public boolean testConnection(FTPClient client) {\n        if (client == null || !client.isConnected()) {\n            return false;\n        }\n        \n        try {\n            boolean result = client.sendNoOp();\n            if (result) {\n                lastSuccessfulConnectionTime.set(System.currentTimeMillis());\n            }\n            return result;\n        } catch (IOException e) {\n            addErrorToHistory(\"Connection test failed: \" + e.getMessage());\n            return false;\n        }\n    }\n    \n    @Override\n    public boolean refreshConnection(FTPClient client) {\n        if (client == null) {\n            return false;\n        }\n        \n        try {\n            connectionManager.closeConnection(client);\n            // Create a new connection with the same settings\n            // This is simplified - in real implementation would need to preserve state\n            FTPClient newClient = connectionManager.createConnection();\n            // Copy relevant properties from old client to new client\n            client = newClient;\n            lastSuccessfulConnectionTime.set(System.currentTimeMillis());\n            return true;\n        } catch (IOException e) {\n            addErrorToHistory(\"Connection refresh failed: \" + e.getMessage());\n            return false;\n        }\n    }\n    \n    @Override\n    public long getLastSuccessfulConnectionTime() {\n        return lastSuccessfulConnectionTime.get();\n    }\n    \n    @Override\n    public List<String> getConnectionErrorHistory() {\n        return new ArrayList<>(connectionErrorHistory);\n    }\n    \n    @Override\n    public HealthStatus getConnectionStatus() {\n        long lastSuccessTime = lastSuccessfulConnectionTime.get();\n        if (lastSuccessTime == 0) {\n            return HealthStatus.FAILED;\n        }\n        \n        long timeSinceLastSuccess = System.currentTimeMillis() - lastSuccessTime;\n        if (timeSinceLastSuccess > 300000) { // 5 minutes\n            return HealthStatus.FAILED;\n        } else if (timeSinceLastSuccess > 60000) { // 1 minute\n            return HealthStatus.DEGRADED;\n        } else {\n            return HealthStatus.HEALTHY;\n        }\n    }\n    \n    private void addErrorToHistory(String error) {\n        connectionErrorHistory.add(error);\n        while (connectionErrorHistory.size() > maxErrorHistorySize) {\n            connectionErrorHistory.poll();\n        }\n    }\n}\n```",
+      "testStrategy": "1. Test connection testing with both healthy and unhealthy connections\n2. Verify connection refresh functionality\n3. Test health status reporting under various conditions\n4. Verify error history tracking and management\n5. Test keep-alive functionality for idle connections\n6. Verify proper handling of connection state during health checks",
+      "priority": "medium",
+      "dependencies": [
+        4
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 6,
+      "title": "Implement Basic FTP Operations",
+      "description": "Implement the core FTP operations required by the PersistentFTPService interface, including file listing, download, upload, and deletion.",
+      "details": "1. Implement file listing with filtering\n2. Create file download and streaming capabilities\n3. Implement file upload functionality\n4. Add directory manipulation operations\n5. Create file attribute handling\n6. Implement proper error handling for all operations\n\nCode structure:\n```java\npublic class FTPOperations {\n    private final FTPConnectionPool connectionPool;\n    private final ComponentLog logger;\n    \n    public FTPOperations(FTPConnectionPool connectionPool, ComponentLog logger) {\n        this.connectionPool = connectionPool;\n        this.logger = logger;\n    }\n    \n    public List<FTPFile> listFiles(String directory, FileFilter filter) throws IOException {\n        FTPClient client = null;\n        try {\n            client = connectionPool.borrowConnection();\n            FTPFile[] files = client.listFiles(directory);\n            List<FTPFile> result = new ArrayList<>();\n            \n            if (files != null) {\n                for (FTPFile file : files) {\n                    if (filter == null || filter.accept(file)) {\n                        result.add(file);\n                    }\n                }\n            }\n            \n            return result;\n        } catch (IOException e) {\n            if (client != null) {\n                connectionPool.invalidateConnection(client);\n                client = null;\n            }\n            throw e;\n        } finally {\n            if (client != null) {\n                connectionPool.returnConnection(client);\n            }\n        }\n    }\n    \n    public InputStream retrieveFileStream(String remotePath) throws IOException {\n        final FTPClient client = connectionPool.borrowConnection();\n        try {\n            InputStream is = client.retrieveFileStream(remotePath);\n            if (is == null) {\n                int replyCode = client.getReplyCode();\n                String replyString = client.getReplyString();\n                connectionPool.returnConnection(client);\n                throw new IOException(\"Failed to retrieve file stream. Reply code: \" + replyCode + \", Reply string: \" + replyString);\n            }\n            \n            // Wrap the input stream to return the connection when closed\n            return new FilterInputStream(is) {\n                private boolean closed = false;\n                \n                @Override\n                public void close() throws IOException {\n                    if (closed) {\n                        return;\n                    }\n                    closed = true;\n                    \n                    try {\n                        super.close();\n                        if (!client.completePendingCommand()) {\n                            connectionPool.invalidateConnection(client);\n                            throw new IOException(\"Failed to complete file transfer\");\n                        }\n                        connectionPool.returnConnection(client);\n                    } catch (IOException e) {\n                        connectionPool.invalidateConnection(client);\n                        throw e;\n                    }\n                }\n            };\n        } catch (IOException e) {\n            connectionPool.invalidateConnection(client);\n            throw e;\n        }\n    }\n    \n    public boolean storeFile(String remotePath, InputStream input) throws IOException {\n        FTPClient client = null;\n        try {\n            client = connectionPool.borrowConnection();\n            return client.storeFile(remotePath, input);\n        } catch (IOException e) {\n            if (client != null) {\n                connectionPool.invalidateConnection(client);\n                client = null;\n            }\n            throw e;\n        } finally {\n            if (client != null) {\n                connectionPool.returnConnection(client);\n            }\n        }\n    }\n    \n    public boolean deleteFile(String remotePath) throws IOException {\n        FTPClient client = null;\n        try {\n            client = connectionPool.borrowConnection();\n            return client.deleteFile(remotePath);\n        } catch (IOException e) {\n            if (client != null) {\n                connectionPool.invalidateConnection(client);\n                client = null;\n            }\n            throw e;\n        } finally {\n            if (client != null) {\n                connectionPool.returnConnection(client);\n            }\n        }\n    }\n}\n```",
+      "testStrategy": "1. Test file listing with mock FTP server\n2. Verify file filtering functionality\n3. Test file download with various file sizes\n4. Verify proper stream handling and resource cleanup\n5. Test file upload with various input sources\n6. Verify directory operations\n7. Test error handling for various failure scenarios",
+      "priority": "high",
+      "dependencies": [
+        4,
+        "3"
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement FTP Directory Listing",
+          "description": "Create functionality to list files and directories from an FTP server",
+          "dependencies": [],
+          "details": "Implement methods to retrieve and parse directory listings from FTP servers. Include support for both detailed and simple listings. Handle connection acquisition from the pool, proper command sequencing, and parsing of server responses. Ensure proper connection release back to the pool after operation completion.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Implement File Download Operations",
+          "description": "Create functionality to download files from an FTP server",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement methods for downloading files from FTP servers. Include support for both binary and ASCII transfer modes. Handle stream management, progress tracking, and partial downloads. Ensure proper resource cleanup in both success and failure scenarios.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Implement File Upload Operations",
+          "description": "Create functionality to upload files to an FTP server",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement methods for uploading files to FTP servers. Support both binary and ASCII transfer modes. Include functionality for resumable uploads and progress tracking. Ensure proper handling of connection state and resource cleanup after operations complete or fail.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement Directory Manipulation",
+          "description": "Create functionality to create, rename, and delete directories on an FTP server",
+          "dependencies": [
+            1
+          ],
+          "details": "Implement methods for creating, renaming, and deleting directories on FTP servers. Include proper error checking for existing directories and permission issues. Ensure operations are atomic where possible and handle server-specific quirks in directory path handling.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Implement File Attribute Handling",
+          "description": "Create functionality to get and set file attributes on an FTP server",
+          "dependencies": [
+            1,
+            2,
+            3
+          ],
+          "details": "Implement methods for retrieving and modifying file attributes such as permissions, timestamps, and ownership. Handle server-specific attribute formats and commands. Include support for standard FTP attribute commands and extended commands where available.",
+          "status": "pending"
+        },
+        {
+          "id": 6,
+          "title": "Implement Comprehensive Error Handling",
+          "description": "Create a robust error handling system for all FTP operations",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "details": "Implement a comprehensive error handling system that properly categorizes and reports FTP errors. Include recovery strategies for common failure scenarios such as connection drops, timeouts, and permission issues. Create meaningful exception hierarchies and ensure all operations properly propagate and handle errors.",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Implement Advanced Configuration Options",
+      "description": "Enhance the connection configuration with advanced options for buffer sizes, transfer modes, encoding, and proxy settings.",
+      "details": "1. Implement detailed timeout settings (connection, data, control)\n2. Add buffer size configuration for optimized transfers\n3. Create transfer mode options (ASCII/Binary)\n4. Implement encoding configuration\n5. Add advanced proxy settings\n6. Create SSL/TLS configuration options\n\nCode additions:\n```java\n// Additional property descriptors\nprivate static final PropertyDescriptor BUFFER_SIZE = new PropertyDescriptor.Builder()\n    .name(\"Buffer Size\")\n    .description(\"Size of the buffer to use for file transfers\")\n    .required(true)\n    .defaultValue(\"1048576\") // 1MB\n    .addValidator(StandardValidators.DATA_SIZE_VALIDATOR)\n    .build();\n\nprivate static final PropertyDescriptor CONTROL_ENCODING = new PropertyDescriptor.Builder()\n    .name(\"Control Encoding\")\n    .description(\"The encoding to use for the control channel\")\n    .required(true)\n    .defaultValue(\"UTF-8\")\n    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)\n    .build();\n\nprivate static final PropertyDescriptor TRANSFER_MODE = new PropertyDescriptor.Builder()\n    .name(\"Transfer Mode\")\n    .description(\"The transfer mode to use for file transfers\")\n    .required(true)\n    .allowableValues(\"ASCII\", \"Binary\")\n    .defaultValue(\"Binary\")\n    .build();\n\nprivate static final PropertyDescriptor USE_IMPLICIT_SSL = new PropertyDescriptor.Builder()\n    .name(\"Use Implicit SSL\")\n    .description(\"Whether to use Implicit SSL for the connection\")\n    .required(true)\n    .allowableValues(\"true\", \"false\")\n    .defaultValue(\"false\")\n    .build();\n\n// Proxy configuration\nprivate static final PropertyDescriptor PROXY_HOST = new PropertyDescriptor.Builder()\n    .name(\"Proxy Host\")\n    .description(\"The hostname of the proxy server\")\n    .required(false)\n    .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)\n    .build();\n\n// Implementation in connection creation\npublic FTPClient createConnection() throws IOException {\n    FTPClient client = new FTPClient();\n    \n    // Configure client based on config\n    client.setConnectTimeout(config.getConnectionTimeout());\n    client.setDataTimeout(config.getDataTimeout());\n    client.setControlEncoding(config.getControlEncoding());\n    client.setBufferSize(config.getBufferSize());\n    \n    // Configure proxy if needed\n    if (config.getProxyHost() != null && !config.getProxyHost().isEmpty()) {\n        Proxy proxy = new Proxy(Proxy.Type.SOCKS, \n            new InetSocketAddress(config.getProxyHost(), config.getProxyPort()));\n        client.setSocketFactory(new ProxySocketFactory(proxy));\n    }\n    \n    // Configure SSL if needed\n    if (config.isUseImplicitSSL()) {\n        client = new FTPSClient(true);\n        // Configure SSL parameters\n    } else if (config.isUseExplicitSSL()) {\n        client = new FTPSClient(false);\n        // Configure SSL parameters\n    }\n    \n    // Connect and configure\n    // ...\n    \n    // Set transfer mode\n    if (\"ASCII\".equals(config.getTransferMode())) {\n        client.setFileType(FTP.ASCII_FILE_TYPE);\n    } else {\n        client.setFileType(FTP.BINARY_FILE_TYPE);\n    }\n    \n    return client;\n}\n```",
+      "testStrategy": "1. Test buffer size configuration impact on transfer performance\n2. Verify transfer mode settings (ASCII vs Binary)\n3. Test encoding configuration with various character sets\n4. Verify proxy configuration with mock proxy server\n5. Test SSL/TLS configuration with secure FTP server\n6. Verify proper application of all advanced settings",
+      "priority": "medium",
+      "dependencies": [
+        2,
+        3
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 8,
+      "title": "Implement Error Management and Recovery",
+      "description": "Create a comprehensive error handling and recovery system to handle various failure scenarios and ensure service reliability.",
+      "details": "1. Implement comprehensive error categorization\n2. Create retry mechanisms with exponential backoff\n3. Add error reporting to NiFi bulletins\n4. Implement error recovery strategies for different error types\n5. Create connection failure handling\n6. Add circuit breaker pattern for preventing cascading failures\n\nCode structure:\n```java\npublic class FTPErrorManager {\n    private final ComponentLog logger;\n    private final ProcessorNode processorNode;\n    private final Map<String, RetryPolicy> retryPolicies = new HashMap<>();\n    private final CircuitBreaker circuitBreaker;\n    \n    public FTPErrorManager(ComponentLog logger, ProcessorNode processorNode) {\n        this.logger = logger;\n        this.processorNode = processorNode;\n        \n        // Configure circuit breaker\n        this.circuitBreaker = new CircuitBreaker(\n            10, // failure threshold\n            60000, // reset timeout\n            3 // consecutive success threshold\n        );\n        \n        // Configure retry policies\n        retryPolicies.put(\"connection\", new RetryPolicy(5, 1000, 2.0, 30000)); // max 5 retries, starting at 1s, doubling each time, max 30s\n        retryPolicies.put(\"transfer\", new RetryPolicy(3, 5000, 1.5, 30000)); // max 3 retries, starting at 5s\n        retryPolicies.put(\"listing\", new RetryPolicy(3, 2000, 1.5, 15000)); // max 3 retries, starting at 2s\n    }\n    \n    public <T> T executeWithRetry(String operationType, FTPOperation<T> operation) throws IOException {\n        RetryPolicy policy = retryPolicies.getOrDefault(operationType, retryPolicies.get(\"connection\"));\n        int attempts = 0;\n        long waitTime = policy.getInitialWaitTime();\n        \n        while (true) {\n            try {\n                // Check circuit breaker\n                if (!circuitBreaker.allowRequest()) {\n                    throw new IOException(\"Circuit breaker open - too many failures\");\n                }\n                \n                T result = operation.execute();\n                circuitBreaker.recordSuccess();\n                return result;\n            } catch (IOException e) {\n                attempts++;\n                circuitBreaker.recordFailure();\n                \n                // Categorize error\n                FTPErrorCategory category = categorizeError(e);\n                \n                // Report error\n                reportError(category, e, attempts);\n                \n                // Check if we should retry\n                if (attempts >= policy.getMaxRetries() || !isRetryable(category)) {\n                    throw e;\n                }\n                \n                // Wait before retry\n                try {\n                    Thread.sleep(waitTime);\n                } catch (InterruptedException ie) {\n                    Thread.currentThread().interrupt();\n                    throw new IOException(\"Retry interrupted\", e);\n                }\n                \n                // Increase wait time for next attempt\n                waitTime = Math.min(waitTime * policy.getBackoffMultiplier(), policy.getMaxWaitTime());\n            }\n        }\n    }\n    \n    private FTPErrorCategory categorizeError(IOException e) {\n        String message = e.getMessage();\n        if (message == null) {\n            return FTPErrorCategory.UNKNOWN;\n        }\n        \n        if (message.contains(\"Connection refused\") || message.contains(\"connect timed out\")) {\n            return FTPErrorCategory.CONNECTION_REFUSED;\n        } else if (message.contains(\"No route to host\")) {\n            return FTPErrorCategory.NETWORK_UNREACHABLE;\n        } else if (message.contains(\"connection reset\") || message.contains(\"socket closed\")) {\n            return FTPErrorCategory.CONNECTION_DROPPED;\n        } else if (message.contains(\"login failed\") || message.contains(\"not logged in\")) {\n            return FTPErrorCategory.AUTHENTICATION_FAILURE;\n        } else if (message.contains(\"permission denied\") || message.contains(\"550\")) {\n            return FTPErrorCategory.PERMISSION_DENIED;\n        } else if (message.contains(\"disk full\") || message.contains(\"quota exceeded\")) {\n            return FTPErrorCategory.STORAGE_FULL;\n        } else {\n            return FTPErrorCategory.UNKNOWN;\n        }\n    }\n    \n    private boolean isRetryable(FTPErrorCategory category) {\n        switch (category) {\n            case CONNECTION_REFUSED:\n            case NETWORK_UNREACHABLE:\n            case CONNECTION_DROPPED:\n                return true;\n            case AUTHENTICATION_FAILURE:\n            case PERMISSION_DENIED:\n            case STORAGE_FULL:\n                return false;\n            case UNKNOWN:\n            default:\n                return true;\n        }\n    }\n    \n    private void reportError(FTPErrorCategory category, IOException e, int attempt) {\n        String message = String.format(\"FTP error (%s) on attempt %d: %s\", category, attempt, e.getMessage());\n        logger.error(message, e);\n        \n        if (processorNode != null) {\n            processorNode.getProcessGroup().getBulletinRepository().addBulletin(\n                BulletinFactory.createBulletin(\n                    \"FTP\", \n                    attempt > 1 ? Severity.WARNING : Severity.ERROR, \n                    message\n                )\n            );\n        }\n    }\n    \n    // Helper classes\n    private static class RetryPolicy {\n        private final int maxRetries;\n        private final long initialWaitTime;\n        private final double backoffMultiplier;\n        private final long maxWaitTime;\n        \n        // Constructor, getters\n    }\n    \n    private static class CircuitBreaker {\n        private final int failureThreshold;\n        private final long resetTimeout;\n        private final int successThreshold;\n        private AtomicInteger failureCount = new AtomicInteger(0);\n        private AtomicInteger successCount = new AtomicInteger(0);\n        private AtomicLong lastFailureTime = new AtomicLong(0);\n        private AtomicBoolean open = new AtomicBoolean(false);\n        \n        // Constructor, methods\n    }\n    \n    private enum FTPErrorCategory {\n        CONNECTION_REFUSED,\n        NETWORK_UNREACHABLE,\n        CONNECTION_DROPPED,\n        AUTHENTICATION_FAILURE,\n        PERMISSION_DENIED,\n        STORAGE_FULL,\n        UNKNOWN\n    }\n    \n    @FunctionalInterface\n    public interface FTPOperation<T> {\n        T execute() throws IOException;\n    }\n}\n```",
+      "testStrategy": "1. Test error categorization with various exception types\n2. Verify retry mechanism with simulated failures\n3. Test circuit breaker functionality\n4. Verify proper error reporting to NiFi bulletins\n5. Test recovery strategies for different error types\n6. Verify proper handling of non-retryable errors",
+      "priority": "medium",
+      "dependencies": [
+        5,
+        6
+      ],
+      "status": "pending",
+      "subtasks": []
+    },
+    {
+      "id": 9,
+      "title": "Implement Metrics Collection and Monitoring",
+      "description": "Create a comprehensive metrics collection and monitoring system to track connection statistics, performance metrics, and health status.",
+      "details": "1. Implement connection statistics collection\n2. Create performance metrics tracking\n3. Add throughput measurement\n4. Implement JMX metrics exposure\n5. Create bulletin reporting for significant events\n6. Add custom metric reporting\n\nCode structure:\n```java\npublic class FTPMetricsCollector {\n    private final ComponentLog logger;\n    private final ProcessorNode processorNode;\n    private final AtomicLong totalBytesTransferred = new AtomicLong(0);\n    private final AtomicLong totalFilesTransferred = new AtomicLong(0);\n    private final AtomicLong totalOperations = new AtomicLong(0);\n    private final AtomicLong totalOperationTime = new AtomicLong(0);\n    private final AtomicLong totalErrors = new AtomicLong(0);\n    private final ConcurrentHashMap<String, AtomicLong> operationCounts = new ConcurrentHashMap<>();\n    private final ConcurrentHashMap<String, AtomicLong> operationTimes = new ConcurrentHashMap<>();\n    private final ConcurrentHashMap<String, AtomicLong> errorCounts = new ConcurrentHashMap<>();\n    \n    public FTPMetricsCollector(ComponentLog logger, ProcessorNode processorNode) {\n        this.logger = logger;\n        this.processorNode = processorNode;\n        \n        // Initialize operation types\n        for (String opType : Arrays.asList(\"list\", \"download\", \"upload\", \"delete\", \"mkdir\", \"rename\")) {\n            operationCounts.put(opType, new AtomicLong(0));\n            operationTimes.put(opType, new AtomicLong(0));\n            errorCounts.put(opType, new AtomicLong(0));\n        }\n        \n        // Register JMX beans\n        registerJmxBeans();\n    }\n    \n    public <T> T trackOperation(String operationType, FTPOperation<T> operation) throws IOException {\n        long startTime = System.currentTimeMillis();\n        totalOperations.incrementAndGet();\n        operationCounts.get(operationType).incrementAndGet();\n        \n        try {\n            T result = operation.execute();\n            long duration = System.currentTimeMillis() - startTime;\n            totalOperationTime.addAndGet(duration);\n            operationTimes.get(operationType).addAndGet(duration);\n            return result;\n        } catch (IOException e) {\n            totalErrors.incrementAndGet();\n            errorCounts.get(operationType).incrementAndGet();\n            throw e;\n        }\n    }\n    \n    public void trackFileTransfer(String operationType, long bytes) {\n        totalBytesTransferred.addAndGet(bytes);\n        totalFilesTransferred.incrementAndGet();\n    }\n    \n    public Map<String, Object> getMetrics() {\n        Map<String, Object> metrics = new HashMap<>();\n        metrics.put(\"totalBytesTransferred\", totalBytesTransferred.get());\n        metrics.put(\"totalFilesTransferred\", totalFilesTransferred.get());\n        metrics.put(\"totalOperations\", totalOperations.get());\n        metrics.put(\"totalOperationTime\", totalOperationTime.get());\n        metrics.put(\"totalErrors\", totalErrors.get());\n        \n        Map<String, Object> opCounts = new HashMap<>();\n        for (Map.Entry<String, AtomicLong> entry : operationCounts.entrySet()) {\n            opCounts.put(entry.getKey(), entry.getValue().get());\n        }\n        metrics.put(\"operationCounts\", opCounts);\n        \n        Map<String, Object> opTimes = new HashMap<>();\n        for (Map.Entry<String, AtomicLong> entry : operationTimes.entrySet()) {\n            opTimes.put(entry.getKey(), entry.getValue().get());\n        }\n        metrics.put(\"operationTimes\", opTimes);\n        \n        Map<String, Object> errCounts = new HashMap<>();\n        for (Map.Entry<String, AtomicLong> entry : errorCounts.entrySet()) {\n            errCounts.put(entry.getKey(), entry.getValue().get());\n        }\n        metrics.put(\"errorCounts\", errCounts);\n        \n        return metrics;\n    }\n    \n    public void reportSignificantEvent(String event, Severity severity) {\n        if (processorNode != null) {\n            processorNode.getProcessGroup().getBulletinRepository().addBulletin(\n                BulletinFactory.createBulletin(\n                    \"FTP Metrics\", \n                    severity, \n                    event\n                )\n            );\n        }\n    }\n    \n    private void registerJmxBeans() {\n        // JMX registration code\n    }\n    \n    @FunctionalInterface\n    public interface FTPOperation<T> {\n        T execute() throws IOException;\n    }\n}\n```",
+      "testStrategy": "1. Test metrics collection for various operation types\n2. Verify accuracy of collected metrics\n3. Test JMX metrics exposure\n4. Verify bulletin reporting for significant events\n5. Test performance impact of metrics collection\n6. Verify thread safety of metrics collection",
+      "priority": "medium",
+      "dependencies": [
+        4,
+        5,
+        6
+      ],
+      "status": "pending",
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "Implement Connection Statistics Collection",
+          "description": "Create a system to track and collect connection-related statistics such as active connections, connection failures, and connection durations.",
+          "dependencies": [],
+          "details": "Implement a thread-safe mechanism to track connection statistics. Include counters for total connections, active connections, failed connections, and average connection duration. Ensure minimal performance impact during high-throughput scenarios.",
+          "status": "pending"
+        },
+        {
+          "id": 2,
+          "title": "Develop Performance Metrics Collection",
+          "description": "Implement collection of performance-related metrics including CPU usage, memory consumption, and response times.",
+          "dependencies": [],
+          "details": "Create a metrics collector that samples system performance at regular intervals. Include CPU utilization, memory usage, garbage collection statistics, and operation response times. Design with thread-safety in mind and implement appropriate sampling rates to minimize overhead.",
+          "status": "pending"
+        },
+        {
+          "id": 3,
+          "title": "Build Throughput Measurement System",
+          "description": "Create a system to measure and report on data throughput including bytes processed, messages handled, and processing rates.",
+          "dependencies": [],
+          "details": "Implement counters for tracking bytes processed, message counts, and calculate processing rates (messages/second, bytes/second). Include peak measurements and rolling averages. Ensure atomic operations for thread-safety in high-concurrency environments.",
+          "status": "pending"
+        },
+        {
+          "id": 4,
+          "title": "Implement JMX Metrics Exposure",
+          "description": "Expose all collected metrics through JMX for external monitoring and management tools.",
+          "dependencies": [
+            1,
+            2,
+            3
+          ],
+          "details": "Create MBean interfaces and implementations for all metrics categories. Register MBeans with the JMX server. Implement appropriate attribute and operation naming conventions. Test with JMX monitoring tools like JConsole and VisualVM to ensure proper visibility.",
+          "status": "pending"
+        },
+        {
+          "id": 5,
+          "title": "Develop Bulletin Reporting System",
+          "description": "Create a bulletin system to report significant events, warnings, and errors based on metric thresholds.",
+          "dependencies": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "details": "Implement configurable thresholds for various metrics. Create a bulletin generation system that triggers notifications when thresholds are crossed. Include severity levels, timestamps, and contextual information in bulletins. Provide hooks for different notification channels (logs, UI, email, etc.).",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Integrate Service with NiFi Processors",
+      "description": "Create integration points for the PersistentFTPService with NiFi processors, including example processor implementations.",
+      "details": "1. Finalize the PersistentFTPService implementation\n2. Create example processor for FTP listing\n3. Implement example processor for FTP get operations\n4. Create example processor for FTP put operations\n5. Implement proper service discovery and validation\n6. Add comprehensive documentation\n\nCode structure:\n```java\n// Final PersistentFTPService implementation\n@Tags({\"ftp\", \"sftp\", \"remote\", \"connection\", \"pool\"})\n@CapabilityDescription(\"Provides persistent FTP connection management with connection pooling, health monitoring, and optimized operations for handling large volumes of files.\")\npublic class PersistentFTPConnectionService extends AbstractControllerService implements PersistentFTPService {\n    // Property descriptors and other fields\n    \n    private FTPConnectionPool connectionPool;\n    private FTPConnectionHealthManager healthManager;\n    private FTPOperations operations;\n    private FTPErrorManager errorManager;\n    private FTPMetricsCollector metricsCollector;\n    \n    @Override\n    protected void init(ControllerServiceInitializationContext context) {\n        // Initialize service\n    }\n    \n    @OnEnabled\n    public void onEnabled(final ConfigurationContext context) {\n        // Create configuration from context\n        FTPConnectionConfig config = createConfig(context);\n        \n        // Initialize components\n        connectionPool = new FTPConnectionPool(config, getLogger());\n        healthManager = new FTPConnectionHealthManager(connectionManager, getLogger());\n        operations = new FTPOperations(connectionPool, getLogger());\n        errorManager = new FTPErrorManager(getLogger(), null);\n        metricsCollector = new FTPMetricsCollector(getLogger(), null);\n    }\n    \n    @OnDisabled\n    public void onDisabled() {\n        if (connectionPool != null) {\n            connectionPool.shutdown();\n        }\n    }\n    \n    @Override\n    public FTPClient getConnection() throws IOException {\n        return errorManager.executeWithRetry(\"connection\", () -> {\n            return connectionPool.borrowConnection();\n        });\n    }\n    \n    @Override\n    public void releaseConnection(FTPClient client) {\n        if (client != null) {\n            connectionPool.returnConnection(client);\n        }\n    }\n    \n    @Override\n    public boolean testConnection() {\n        FTPClient client = null;\n        try {\n            client = getConnection();\n            return healthManager.testConnection(client);\n        } catch (IOException e) {\n            return false;\n        } finally {\n            releaseConnection(client);\n        }\n    }\n    \n    @Override\n    public Map<String, Object> getConnectionStats() {\n        Map<String, Object> stats = new HashMap<>();\n        stats.putAll(connectionPool.getPoolMetrics());\n        stats.putAll(metricsCollector.getMetrics());\n        return stats;\n    }\n    \n    @Override\n    public List<FTPFile> listFiles(String directory, FileFilter filter) throws IOException {\n        return metricsCollector.trackOperation(\"list\", () -> {\n            return errorManager.executeWithRetry(\"listing\", () -> {\n                return operations.listFiles(directory, filter);\n            });\n        });\n    }\n    \n    @Override\n    public InputStream retrieveFileStream(String remotePath) throws IOException {\n        return metricsCollector.trackOperation(\"download\", () -> {\n            return errorManager.executeWithRetry(\"transfer\", () -> {\n                return operations.retrieveFileStream(remotePath);\n            });\n        });\n    }\n    \n    @Override\n    public boolean storeFile(String remotePath, InputStream input) throws IOException {\n        return metricsCollector.trackOperation(\"upload\", () -> {\n            return errorManager.executeWithRetry(\"transfer\", () -> {\n                return operations.storeFile(remotePath, input);\n            });\n        });\n    }\n    \n    @Override\n    public boolean deleteFile(String remotePath) throws IOException {\n        return metricsCollector.trackOperation(\"delete\", () -> {\n            return errorManager.executeWithRetry(\"delete\", () -> {\n                return operations.deleteFile(remotePath);\n            });\n        });\n    }\n    \n    @Override\n    public void disconnect(FTPClient client) {\n        if (client != null) {\n            connectionPool.invalidateConnection(client);\n        }\n    }\n    \n    private FTPConnectionConfig createConfig(ConfigurationContext context) {\n        // Create configuration from context properties\n    }\n}\n\n// Example processor using the service\n@Tags({\"ftp\", \"get\", \"retrieve\", \"files\", \"fetch\", \"remote\"})\n@CapabilityDescription(\"Fetches files from an FTP server using a persistent connection service\")\npublic class PersistentFTPGet extends AbstractProcessor {\n    public static final PropertyDescriptor FTP_CONNECTION_SERVICE = new PropertyDescriptor.Builder()\n        .name(\"FTP Connection Service\")\n        .description(\"Specifies the Controller Service to use for accessing the FTP connection\")\n        .identifiesControllerService(PersistentFTPService.class)\n        .required(true)\n        .build();\n    \n    public static final PropertyDescriptor REMOTE_DIRECTORY = new PropertyDescriptor.Builder()\n        .name(\"Remote Directory\")\n        .description(\"The directory on the FTP server from which to retrieve files\")\n        .required(true)\n        .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)\n        .build();\n    \n    public static final Relationship REL_SUCCESS = new Relationship.Builder()\n        .name(\"success\")\n        .description(\"Files that have been successfully retrieved from the remote server\")\n        .build();\n    \n    public static final Relationship REL_FAILURE = new Relationship.Builder()\n        .name(\"failure\")\n        .description(\"Files that could not be retrieved from the remote server\")\n        .build();\n    \n    private PersistentFTPService ftpService;\n    \n    @Override\n    protected void init(ProcessorInitializationContext context) {\n        final Set<Relationship> relationships = new HashSet<>();\n        relationships.add(REL_SUCCESS);\n        relationships.add(REL_FAILURE);\n        this.relationships = Collections.unmodifiableSet(relationships);\n        \n        final List<PropertyDescriptor> properties = new ArrayList<>();\n        properties.add(FTP_CONNECTION_SERVICE);\n        properties.add(REMOTE_DIRECTORY);\n        this.properties = Collections.unmodifiableList(properties);\n    }\n    \n    @OnScheduled\n    public void onScheduled(final ProcessContext context) {\n        ftpService = context.getProperty(FTP_CONNECTION_SERVICE).asControllerService(PersistentFTPService.class);\n    }\n    \n    @Override\n    public void onTrigger(ProcessContext context, ProcessSession session) throws ProcessException {\n        final String remoteDirectory = context.getProperty(REMOTE_DIRECTORY).getValue();\n        \n        try {\n            // List files in the directory\n            List<FTPFile> files = ftpService.listFiles(remoteDirectory, null);\n            \n            for (FTPFile file : files) {\n                if (file.isFile()) {\n                    String remotePath = remoteDirectory + \"/\" + file.getName();\n                    \n                    // Create a FlowFile for the remote file\n                    FlowFile flowFile = session.create();\n                    \n                    try {\n                        // Get the remote file's content\n                        flowFile = session.write(flowFile, out -> {\n                            try (InputStream in = ftpService.retrieveFileStream(remotePath)) {\n                                IOUtils.copy(in, out);\n                            }\n                        });\n                        \n                        // Set attributes\n                        Map<String, String> attributes = new HashMap<>();\n                        attributes.put(\"filename\", file.getName());\n                        attributes.put(\"path\", remotePath);\n                        attributes.put(\"size\", String.valueOf(file.getSize()));\n                        attributes.put(\"ftp.remote.host\", context.getProperty(FTP_CONNECTION_SERVICE).getValue());\n                        attributes.put(\"ftp.remote.directory\", remoteDirectory);\n                        flowFile = session.putAllAttributes(flowFile, attributes);\n                        \n                        // Transfer to success\n                        session.transfer(flowFile, REL_SUCCESS);\n                        getLogger().info(\"Successfully retrieved file {}\", new Object[]{remotePath});\n                    } catch (Exception e) {\n                        // Transfer to failure\n                        session.transfer(flowFile, REL_FAILURE);\n                        getLogger().error(\"Failed to retrieve file {}\", new Object[]{remotePath, e});\n                    }\n                }\n            }\n        } catch (IOException e) {\n            getLogger().error(\"Failed to list files in directory {}\", new Object[]{remoteDirectory, e});\n            context.yield();\n        }\n    }\n}\n```",
+      "testStrategy": "1. Test service integration with NiFi framework\n2. Verify proper service discovery and validation\n3. Test example processors with the service\n4. Verify proper error handling and reporting\n5. Test service lifecycle management\n6. Verify proper resource cleanup during processor/service shutdown",
+      "priority": "medium",
+      "dependencies": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "status": "pending",
+      "subtasks": []
+    }
+  ]
+}

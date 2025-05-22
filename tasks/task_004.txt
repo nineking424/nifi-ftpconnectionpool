@@ -1,0 +1,182 @@
+# Task ID: 4
+# Title: Implement Connection Pool
+# Status: done
+# Dependencies: 3
+# Priority: high
+# Description: Create a robust connection pooling mechanism to manage multiple FTP connections efficiently according to the Connection Pool Model.
+# Details:
+1. Implement connection pool using Apache Commons Pool2
+2. Create custom FTPClientFactory for connection creation
+3. Implement connection validation and eviction policies
+4. Create thread-safe connection borrowing and returning mechanisms
+5. Add connection tagging for tracking and metrics
+6. Implement pool configuration based on service properties
+
+Code structure:
+```java
+public class FTPConnectionPool implements FTPConnectionPool {
+    private final GenericObjectPool<FTPClient> pool;
+    private final FTPConnectionManager connectionManager;
+    private final ComponentLog logger;
+    
+    public FTPConnectionPool(FTPConnectionConfig config, ComponentLog logger) {
+        this.connectionManager = new FTPConnectionManager(config, logger);
+        this.logger = logger;
+        
+        // Create pool factory
+        FTPClientFactory factory = new FTPClientFactory(connectionManager);
+        
+        // Configure pool
+        GenericObjectPoolConfig<FTPClient> poolConfig = new GenericObjectPoolConfig<>();
+        poolConfig.setMaxTotal(config.getMaxConnectionsPerHost());
+        poolConfig.setMinIdle(config.getMinConnections());
+        poolConfig.setMaxIdle(config.getMaxConnections() / 2);
+        poolConfig.setTestOnBorrow(true);
+        poolConfig.setTestOnReturn(true);
+        poolConfig.setTimeBetweenEvictionRunsMillis(config.getConnectionTestInterval());
+        poolConfig.setMinEvictableIdleTimeMillis(config.getConnectionIdleTimeout());
+        
+        // Create pool
+        this.pool = new GenericObjectPool<>(factory, poolConfig);
+    }
+    
+    @Override
+    public FTPClient borrowConnection() throws IOException {
+        try {
+            return pool.borrowObject();
+        } catch (Exception e) {
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else {
+                throw new IOException("Could not borrow FTP connection from pool", e);
+            }
+        }
+    }
+    
+    @Override
+    public void returnConnection(FTPClient client) {
+        if (client != null) {
+            pool.returnObject(client);
+        }
+    }
+    
+    @Override
+    public void invalidateConnection(FTPClient client) {
+        if (client != null) {
+            try {
+                pool.invalidateObject(client);
+            } catch (Exception e) {
+                logger.warn("Error invalidating FTP connection: {}", e);
+            }
+        }
+    }
+    
+    @Override
+    public int getActiveConnectionCount() {
+        return pool.getNumActive();
+    }
+    
+    @Override
+    public int getIdleConnectionCount() {
+        return pool.getNumIdle();
+    }
+    
+    @Override
+    public Map<String, Object> getPoolMetrics() {
+        Map<String, Object> metrics = new HashMap<>();
+        metrics.put("activeConnections", pool.getNumActive());
+        metrics.put("idleConnections", pool.getNumIdle());
+        metrics.put("maxConnections", pool.getMaxTotal());
+        metrics.put("minConnections", pool.getMinIdle());
+        // Additional metrics
+        return metrics;
+    }
+    
+    @Override
+    public void shutdown() {
+        pool.close();
+    }
+    
+    // Factory class for creating FTP connections
+    private static class FTPClientFactory extends BasePooledObjectFactory<FTPClient> {
+        private final FTPConnectionManager connectionManager;
+        
+        public FTPClientFactory(FTPConnectionManager connectionManager) {
+            this.connectionManager = connectionManager;
+        }
+        
+        @Override
+        public FTPClient create() throws Exception {
+            return connectionManager.createConnection();
+        }
+        
+        @Override
+        public PooledObject<FTPClient> wrap(FTPClient client) {
+            return new DefaultPooledObject<>(client);
+        }
+        
+        @Override
+        public boolean validateObject(PooledObject<FTPClient> pooledObject) {
+            return connectionManager.validateConnection(pooledObject.getObject());
+        }
+        
+        @Override
+        public void destroyObject(PooledObject<FTPClient> pooledObject) throws Exception {
+            connectionManager.closeConnection(pooledObject.getObject());
+        }
+    }
+}
+```
+
+# Test Strategy:
+1. Test connection pool initialization with various configurations
+2. Verify proper borrowing and returning of connections
+3. Test connection validation during borrowing
+4. Verify connection invalidation and recreation
+5. Test pool metrics accuracy
+6. Verify thread safety with concurrent connection requests
+7. Test pool shutdown and resource cleanup
+
+# Subtasks:
+## 1. Implement Pool Configuration [done]
+### Dependencies: None
+### Description: Define and implement the configuration class for the connection pool with customizable parameters.
+### Details:
+Create a configuration class that allows setting of max connections, idle time, validation interval, and other pool parameters. Include builder pattern for easy configuration. Implement sensible defaults for all parameters. Document each configuration option with clear explanations of its impact on pool behavior.
+
+## 2. Create Connection Factory [done]
+### Dependencies: 4.1
+### Description: Implement a factory class that creates, validates, and destroys connection objects for the pool.
+### Details:
+Implement PooledObjectFactory interface from Commons Pool2. Create methods for makeObject(), validateObject(), activateObject(), passivateObject(), and destroyObject(). Handle connection creation errors gracefully. Ensure proper resource cleanup in the destroy method.
+
+## 3. Implement Validation Policies [done]
+### Dependencies: 4.2
+### Description: Create validation mechanisms to test connections for validity before providing them to clients.
+### Details:
+Implement connection validation logic in validateObject(). Create test query mechanism for database connections. Add idle connection validation. Implement connection age validation. Create eviction policy for stale connections. Handle validation failures with appropriate logging.
+
+## 4. Ensure Thread-Safe Operations [done]
+### Dependencies: 4.2, 4.3
+### Description: Implement thread-safe mechanisms for borrowing, returning, and managing connections in the pool.
+### Details:
+Use GenericObjectPool from Commons Pool2 for thread-safe operations. Implement proper synchronization for custom methods. Create timeout handling for connection borrowing. Implement deadlock prevention mechanisms. Add logging for concurrent access patterns.
+
+## 5. Add Connection Tagging Support [done]
+### Dependencies: 4.2, 4.4
+### Description: Implement a system to tag connections with metadata for tracking and specialized usage.
+### Details:
+Create a tagging mechanism to associate metadata with connections. Implement methods to borrow connections with specific tags. Add support for tag-based connection selection. Create tag statistics collection. Document tagging API for users.
+
+## 6. Implement Metrics Collection [done]
+### Dependencies: 4.4
+### Description: Add comprehensive metrics collection to monitor pool health and performance.
+### Details:
+Implement counters for active, idle, and total connections. Add timing metrics for connection acquisition. Create utilization percentage calculation. Implement periodic metrics logging. Add JMX support for metrics exposure. Create alerting thresholds for pool exhaustion.
+
+## 7. Create Pool Shutdown Procedures [done]
+### Dependencies: 4.4, 4.6
+### Description: Implement graceful shutdown mechanisms for the connection pool.
+### Details:
+Create methods for immediate and graceful pool shutdown. Implement connection cleanup during shutdown. Add shutdown hooks for JVM termination. Create timeout handling for shutdown operations. Implement proper resource release verification. Add logging for shutdown process.
+

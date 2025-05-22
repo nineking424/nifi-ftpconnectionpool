@@ -1,0 +1,140 @@
+# Task ID: 3
+# Title: Implement Single Connection Management
+# Status: done
+# Dependencies: 2
+# Priority: high
+# Description: Create the core connection management functionality for establishing, validating, and closing individual FTP connections.
+# Details:
+1. Implement connection creation logic using Apache Commons Net FTPClient
+2. Create connection validation mechanism
+3. Implement proper connection close handling
+4. Add reconnection logic with exponential backoff
+5. Create connection state tracking
+6. Implement error handling for connection operations
+
+Code structure:
+```java
+public class FTPConnectionManager {
+    private final FTPConnectionConfig config;
+    private final ComponentLog logger;
+    
+    public FTPConnectionManager(FTPConnectionConfig config, ComponentLog logger) {
+        this.config = config;
+        this.logger = logger;
+    }
+    
+    public FTPClient createConnection() throws IOException {
+        FTPClient client = new FTPClient();
+        try {
+            // Configure client based on config
+            client.setConnectTimeout(config.getConnectionTimeout());
+            client.setDataTimeout(config.getDataTimeout());
+            client.setControlEncoding(config.getControlEncoding());
+            
+            // Connect to server
+            client.connect(config.getHostname(), config.getPort());
+            int reply = client.getReplyCode();
+            if (!FTPReply.isPositiveCompletion(reply)) {
+                client.disconnect();
+                throw new IOException("FTP server refused connection");
+            }
+            
+            // Login
+            if (!client.login(config.getUsername(), config.getPassword())) {
+                client.disconnect();
+                throw new IOException("Could not login to FTP server");
+            }
+            
+            // Configure connection mode
+            if (config.isActiveMode()) {
+                client.enterLocalActiveMode();
+            } else {
+                client.enterLocalPassiveMode();
+            }
+            
+            // Additional configuration
+            
+            return client;
+        } catch (IOException e) {
+            if (client.isConnected()) {
+                try {
+                    client.disconnect();
+                } catch (IOException disconnectException) {
+                    // Log disconnect exception
+                }
+            }
+            throw e;
+        }
+    }
+    
+    public boolean validateConnection(FTPClient client) {
+        try {
+            return client.sendNoOp();
+        } catch (IOException e) {
+            return false;
+        }
+    }
+    
+    public void closeConnection(FTPClient client) {
+        if (client != null && client.isConnected()) {
+            try {
+                client.logout();
+            } catch (IOException e) {
+                // Log exception
+            } finally {
+                try {
+                    client.disconnect();
+                } catch (IOException e) {
+                    // Log exception
+                }
+            }
+        }
+    }
+}
+```
+
+# Test Strategy:
+1. Test connection creation with mock FTP server
+2. Verify proper configuration of FTPClient based on settings
+3. Test connection validation with both valid and invalid connections
+4. Verify proper cleanup during connection close
+5. Test reconnection logic with simulated failures
+6. Verify error handling for various connection scenarios
+
+# Subtasks:
+## 1. Implement connection creation and initialization [done]
+### Dependencies: None
+### Description: Create methods to establish a new FTP connection with proper initialization of the FTPClient object
+### Details:
+Implement connect() method that initializes FTPClient, sets necessary parameters (timeout, buffer size, etc.), and establishes connection to the server. Include proper parameter validation and initial configuration. Document all connection parameters.
+
+## 2. Implement connection validation and testing [done]
+### Dependencies: 3.1
+### Description: Create methods to validate if a connection is active and functioning properly
+### Details:
+Implement isConnected() and testConnection() methods that check if the connection is still valid. Handle cases where the connection appears active but has timed out on the server side. Include NOOP command implementation to test connection liveness.
+
+## 3. Implement connection state tracking [done]
+### Dependencies: 3.1, 3.2
+### Description: Create a robust mechanism to track the current state of the FTP connection
+### Details:
+Implement a state machine or enum-based tracking system that maintains the current connection state (DISCONNECTED, CONNECTING, CONNECTED, FAILED, etc.). Ensure thread-safety for state transitions and provide methods to query current state.
+
+## 4. Implement connection closing and cleanup [done]
+### Dependencies: 3.1, 3.3
+### Description: Create methods to properly close an FTP connection and clean up resources
+### Details:
+Implement disconnect() method that properly logs out from the FTP server, closes the connection, and releases all resources. Handle cases where the connection is already closed or in an error state. Update connection state accordingly.
+
+## 5. Implement reconnection logic [done]
+### Dependencies: 3.1, 3.2, 3.3, 3.4
+### Description: Create robust reconnection mechanism to handle connection drops and failures
+### Details:
+Implement reconnect() method that attempts to reestablish a dropped connection with exponential backoff. Include maximum retry count, retry delay configuration, and proper state transitions during reconnection attempts. Handle authentication during reconnection.
+
+## 6. Implement comprehensive error handling [done]
+### Dependencies: 3.1, 3.2, 3.3, 3.4, 3.5
+### Description: Create error handling mechanisms for all connection-related operations
+### Details:
+Implement exception handling for all connection operations. Create custom exception types for different failure scenarios (authentication failure, network error, timeout, etc.). Add logging for all connection events and errors. Ensure errors are properly propagated or handled based on severity.
+

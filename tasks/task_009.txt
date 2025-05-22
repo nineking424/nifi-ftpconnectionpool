@@ -1,0 +1,157 @@
+# Task ID: 9
+# Title: Implement Metrics Collection and Monitoring
+# Status: done
+# Dependencies: 4, 5, 6
+# Priority: medium
+# Description: Create a comprehensive metrics collection and monitoring system to track connection statistics, performance metrics, and health status.
+# Details:
+1. Implement connection statistics collection
+2. Create performance metrics tracking
+3. Add throughput measurement
+4. Implement JMX metrics exposure
+5. Create bulletin reporting for significant events
+6. Add custom metric reporting
+
+Code structure:
+```java
+public class FTPMetricsCollector {
+    private final ComponentLog logger;
+    private final ProcessorNode processorNode;
+    private final AtomicLong totalBytesTransferred = new AtomicLong(0);
+    private final AtomicLong totalFilesTransferred = new AtomicLong(0);
+    private final AtomicLong totalOperations = new AtomicLong(0);
+    private final AtomicLong totalOperationTime = new AtomicLong(0);
+    private final AtomicLong totalErrors = new AtomicLong(0);
+    private final ConcurrentHashMap<String, AtomicLong> operationCounts = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AtomicLong> operationTimes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, AtomicLong> errorCounts = new ConcurrentHashMap<>();
+    
+    public FTPMetricsCollector(ComponentLog logger, ProcessorNode processorNode) {
+        this.logger = logger;
+        this.processorNode = processorNode;
+        
+        // Initialize operation types
+        for (String opType : Arrays.asList("list", "download", "upload", "delete", "mkdir", "rename")) {
+            operationCounts.put(opType, new AtomicLong(0));
+            operationTimes.put(opType, new AtomicLong(0));
+            errorCounts.put(opType, new AtomicLong(0));
+        }
+        
+        // Register JMX beans
+        registerJmxBeans();
+    }
+    
+    public <T> T trackOperation(String operationType, FTPOperation<T> operation) throws IOException {
+        long startTime = System.currentTimeMillis();
+        totalOperations.incrementAndGet();
+        operationCounts.get(operationType).incrementAndGet();
+        
+        try {
+            T result = operation.execute();
+            long duration = System.currentTimeMillis() - startTime;
+            totalOperationTime.addAndGet(duration);
+            operationTimes.get(operationType).addAndGet(duration);
+            return result;
+        } catch (IOException e) {
+            totalErrors.incrementAndGet();
+            errorCounts.get(operationType).incrementAndGet();
+            throw e;
+        }
+    }
+    
+    public void trackFileTransfer(String operationType, long bytes) {
+        totalBytesTransferred.addAndGet(bytes);
+        totalFilesTransferred.incrementAndGet();
+    }
+    
+    public Map<String, Object> getMetrics() {
+        Map<String, Object> metrics = new HashMap<>();
+        metrics.put("totalBytesTransferred", totalBytesTransferred.get());
+        metrics.put("totalFilesTransferred", totalFilesTransferred.get());
+        metrics.put("totalOperations", totalOperations.get());
+        metrics.put("totalOperationTime", totalOperationTime.get());
+        metrics.put("totalErrors", totalErrors.get());
+        
+        Map<String, Object> opCounts = new HashMap<>();
+        for (Map.Entry<String, AtomicLong> entry : operationCounts.entrySet()) {
+            opCounts.put(entry.getKey(), entry.getValue().get());
+        }
+        metrics.put("operationCounts", opCounts);
+        
+        Map<String, Object> opTimes = new HashMap<>();
+        for (Map.Entry<String, AtomicLong> entry : operationTimes.entrySet()) {
+            opTimes.put(entry.getKey(), entry.getValue().get());
+        }
+        metrics.put("operationTimes", opTimes);
+        
+        Map<String, Object> errCounts = new HashMap<>();
+        for (Map.Entry<String, AtomicLong> entry : errorCounts.entrySet()) {
+            errCounts.put(entry.getKey(), entry.getValue().get());
+        }
+        metrics.put("errorCounts", errCounts);
+        
+        return metrics;
+    }
+    
+    public void reportSignificantEvent(String event, Severity severity) {
+        if (processorNode != null) {
+            processorNode.getProcessGroup().getBulletinRepository().addBulletin(
+                BulletinFactory.createBulletin(
+                    "FTP Metrics", 
+                    severity, 
+                    event
+                )
+            );
+        }
+    }
+    
+    private void registerJmxBeans() {
+        // JMX registration code
+    }
+    
+    @FunctionalInterface
+    public interface FTPOperation<T> {
+        T execute() throws IOException;
+    }
+}
+```
+
+# Test Strategy:
+1. Test metrics collection for various operation types
+2. Verify accuracy of collected metrics
+3. Test JMX metrics exposure
+4. Verify bulletin reporting for significant events
+5. Test performance impact of metrics collection
+6. Verify thread safety of metrics collection
+
+# Subtasks:
+## 1. Implement Connection Statistics Collection [done]
+### Dependencies: None
+### Description: Create a system to track and collect connection-related statistics such as active connections, connection failures, and connection durations.
+### Details:
+Implement a thread-safe mechanism to track connection statistics. Include counters for total connections, active connections, failed connections, and average connection duration. Ensure minimal performance impact during high-throughput scenarios.
+
+## 2. Develop Performance Metrics Collection [done]
+### Dependencies: None
+### Description: Implement collection of performance-related metrics including CPU usage, memory consumption, and response times.
+### Details:
+Create a metrics collector that samples system performance at regular intervals. Include CPU utilization, memory usage, garbage collection statistics, and operation response times. Design with thread-safety in mind and implement appropriate sampling rates to minimize overhead.
+
+## 3. Build Throughput Measurement System [done]
+### Dependencies: None
+### Description: Create a system to measure and report on data throughput including bytes processed, messages handled, and processing rates.
+### Details:
+Implement counters for tracking bytes processed, message counts, and calculate processing rates (messages/second, bytes/second). Include peak measurements and rolling averages. Ensure atomic operations for thread-safety in high-concurrency environments.
+
+## 4. Implement JMX Metrics Exposure [done]
+### Dependencies: 9.1, 9.2, 9.3
+### Description: Expose all collected metrics through JMX for external monitoring and management tools.
+### Details:
+Create MBean interfaces and implementations for all metrics categories. Register MBeans with the JMX server. Implement appropriate attribute and operation naming conventions. Test with JMX monitoring tools like JConsole and VisualVM to ensure proper visibility.
+
+## 5. Develop Bulletin Reporting System [done]
+### Dependencies: 9.1, 9.2, 9.3, 9.4
+### Description: Create a bulletin system to report significant events, warnings, and errors based on metric thresholds.
+### Details:
+Implement configurable thresholds for various metrics. Create a bulletin generation system that triggers notifications when thresholds are crossed. Include severity levels, timestamps, and contextual information in bulletins. Provide hooks for different notification channels (logs, UI, email, etc.).
+

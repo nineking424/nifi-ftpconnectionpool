@@ -1,0 +1,633 @@
+# Persistent FTP Connection Controller Service - Product Requirements Document
+
+<PRD>
+# Technical Architecture
+
+## System Overview
+1. **Persistent FTP Connection Controller Service**
+   - Core service for maintaining persistent FTP connections
+   - Connection pooling and management
+   - Connection health monitoring and recovery
+   - Connection configuration with advanced options
+
+2. **NiFi Integration Layer**
+   - Extension of AbstractControllerService
+   - Implementation of custom interfaces for FTP operations
+   - Processor integration points
+   - Service lifecycle management
+
+3. **FTP Operations Layer**
+   - File listing and filtering
+   - File download and streaming
+   - File upload capabilities
+   - Directory manipulation operations
+
+4. **Metrics and Monitoring**
+   - Connection pool statistics
+   - Performance metrics collection
+   - Health status reporting
+   - Logging and debugging support
+
+## Data Models
+
+### Connection Configuration Model
+```json
+{
+  "hostname": "ftp.example.com",
+  "port": 21,
+  "username": "username",
+  "password": "password",
+  "connectionTimeout": 30000,
+  "dataTimeout": 60000,
+  "activeMode": false,
+  "bufferSize": 1048576,
+  "controlEncoding": "UTF-8",
+  "useClientMode": true,
+  "useImplicitSSL": false,
+  "maxConnectionsPerHost": 10,
+  "keepAliveInterval": 60000,
+  "connectionIdleTimeout": 300000,
+  "proxyHost": null,
+  "proxyPort": null,
+  "proxyUsername": null,
+  "proxyPassword": null
+}
+```
+
+### Connection Pool Model
+```json
+{
+  "poolId": "pool-1",
+  "totalConnections": 10,
+  "activeConnections": 5,
+  "idleConnections": 5,
+  "maxConnections": 20,
+  "minConnections": 2,
+  "connectionLeaseTime": 300000,
+  "connectionAcquisitionTimeout": 10000,
+  "connectionTestInterval": 60000,
+  "connectionLifetime": 3600000,
+  "evictionPolicy": "LRU",
+  "connections": [
+    // Array of Connection objects
+  ]
+}
+```
+
+### Connection Model
+```json
+{
+  "connectionId": "conn-123",
+  "hostname": "ftp.example.com",
+  "port": 21,
+  "username": "username",
+  "createdAt": "ISO-8601 timestamp",
+  "lastUsedAt": "ISO-8601 timestamp",
+  "lastTestedAt": "ISO-8601 timestamp",
+  "status": "active|idle|closed|error",
+  "errorMessage": null,
+  "reconnectAttempts": 0,
+  "currentDirectory": "/",
+  "transferMode": "passive",
+  "secureConnection": false
+}
+```
+
+### FTP File Model
+```json
+{
+  "name": "example.txt",
+  "path": "/path/to/example.txt",
+  "size": 1024,
+  "timestamp": "ISO-8601 timestamp",
+  "permissions": "rw-r--r--",
+  "type": "file|directory|link",
+  "owner": "username",
+  "group": "groupname",
+  "link": null,
+  "attributes": {
+    // Additional file attributes
+  }
+}
+```
+
+## APIs and Interfaces
+
+### ControllerService API
+```java
+public interface PersistentFTPService extends ControllerService {
+    FTPClient getConnection() throws IOException;
+    void releaseConnection(FTPClient client);
+    boolean testConnection();
+    Map<String, Object> getConnectionStats();
+    List<FTPFile> listFiles(String directory, FileFilter filter) throws IOException;
+    InputStream retrieveFileStream(String remotePath) throws IOException;
+    boolean storeFile(String remotePath, InputStream input) throws IOException;
+    boolean deleteFile(String remotePath) throws IOException;
+    void disconnect(FTPClient client);
+}
+```
+
+### Connection Pool API
+```java
+public interface FTPConnectionPool {
+    FTPClient borrowConnection() throws IOException;
+    void returnConnection(FTPClient client);
+    void invalidateConnection(FTPClient client);
+    int getActiveConnectionCount();
+    int getIdleConnectionCount();
+    Map<String, Object> getPoolMetrics();
+    void shutdown();
+}
+```
+
+### Connection Health API
+```java
+public interface FTPConnectionHealth {
+    boolean testConnection(FTPClient client);
+    boolean refreshConnection(FTPClient client);
+    long getLastSuccessfulConnectionTime();
+    List<String> getConnectionErrorHistory();
+    HealthStatus getConnectionStatus();
+    enum HealthStatus {
+        HEALTHY, DEGRADED, FAILED
+    }
+}
+```
+
+## Implementation Requirements
+
+1. **NiFi Integration**
+   - NiFi version compatibility: 1.10.0+
+   - Controller Service framework extension
+   - Property descriptor definitions
+   - Dynamic property support
+   - Service lifecycle management
+
+2. **FTP Library**
+   - Apache Commons Net 3.8.0+ implementation
+   - Support for FTP, FTPS (explicit and implicit)
+   - FTPS certificate validation and trust management
+   - Binary and ASCII transfer modes
+   - Active and passive connection modes
+
+3. **Connection Management**
+   - Connection pooling with configurable size
+   - Connection validation before lending
+   - Automatic connection repair
+   - Keep-alive mechanism for idle connections
+   - Connection timeout handling
+
+4. **Performance Optimization**
+   - Buffer size configuration
+   - Multi-threaded operations
+   - Parallel downloads capability
+   - Bulk operations optimization
+   - Configurable connection reuse strategy
+
+5. **Monitoring and Metrics**
+   - JMX metrics exposure
+   - Bulletin reporting
+   - Connection statistics reporting
+   - Performance metrics collection
+   - Error tracking and reporting
+
+6. **Security**
+   - Secure credential handling
+   - FTPS support with certificate validation
+   - Proxy server support
+   - IP filtering capabilities
+   - Connection isolation
+
+# Development Roadmap
+
+## Phase 1: Core Connection Service
+1. **Basic FTP Connection Controller**
+   - Implement AbstractControllerService extension
+   - Create basic connection management
+   - Implement property validation
+   - Add basic connection testing
+   - Create simple connection acquisition method
+
+2. **Connection Configuration**
+   - Implement hostname/port configuration
+   - Add username/password properties
+   - Create timeout configuration options
+   - Implement connection mode settings
+   - Add basic error handling
+
+3. **Single Connection Management**
+   - Create connection creation logic
+   - Implement connection validation
+   - Add connection close handling
+   - Create reconnection logic
+   - Implement basic connection state tracking
+
+4. **Basic FTP Operations**
+   - Implement file listing
+   - Add file download capability
+   - Create directory operations
+   - Add file deletion operations
+   - Implement simple file attribute handling
+
+## Phase 2: Connection Pooling
+1. **Connection Pool Implementation**
+   - Design connection pool architecture
+   - Implement connection borrowing/returning
+   - Create pool size management
+   - Add connection validation before lending
+   - Implement connection eviction policy
+
+2. **Connection Health Management**
+   - Implement connection testing
+   - Create automatic repair mechanisms
+   - Add keep-alive functionality
+   - Implement idle timeout handling
+   - Create connection status tracking
+
+3. **Advanced Configuration**
+   - Add detailed timeout settings
+   - Implement buffer size configuration
+   - Create transfer mode options
+   - Add encoding configuration
+   - Implement advanced proxy settings
+
+4. **Error Management**
+   - Create comprehensive error handling
+   - Implement retry mechanisms
+   - Add error reporting
+   - Create error recovery strategies
+   - Implement connection failure handling
+
+## Phase 3: Performance Optimization
+1. **Buffer and Stream Optimization**
+   - Implement configurable buffer sizes
+   - Create stream handling optimizations
+   - Add data compression options
+   - Implement efficient data transfer
+   - Create memory usage optimizations
+
+2. **Multi-Threaded Operations**
+   - Implement thread-safe connection handling
+   - Create parallel operation capabilities
+   - Add thread pool configuration
+   - Implement resource locking mechanisms
+   - Create connection isolation
+
+3. **Bulk Operations**
+   - Implement batch file listing
+   - Create bulk download capabilities
+   - Add batch operation optimizations
+   - Implement queue management
+   - Create operation prioritization
+
+4. **Resource Management**
+   - Implement proper resource cleanup
+   - Create memory leak prevention
+   - Add thread resource management
+   - Implement connection resource tracking
+   - Create efficient resource allocation
+
+## Phase 4: Monitoring and Security
+1. **Metrics Collection**
+   - Implement connection statistics
+   - Create performance metrics
+   - Add throughput measurement
+   - Implement timing metrics
+   - Create custom metric reporting
+
+2. **Monitoring Integration**
+   - Implement JMX metrics exposure
+   - Create bulletin reporting
+   - Add logging enhancements
+   - Implement state reporting
+   - Create monitoring dashboards
+
+3. **Security Enhancements**
+   - Implement FTPS support
+   - Create certificate validation
+   - Add proxy authentication
+   - Implement IP filtering
+   - Create secure credential handling
+
+4. **Advanced Features**
+   - Implement connection load balancing
+   - Create automatic connection rotation
+   - Add connection distribution strategies
+   - Implement connection failover
+   - Create high availability features
+
+# Logical Dependency Chain
+
+## Foundation Layer
+1. **Basic FTP Connection Controller**
+   - Must be implemented first as foundation for all functionality
+   - Establishes the controller service framework
+   - Creates the basis for property configuration
+
+2. **Connection Configuration**
+   - Built directly on the basic controller
+   - Provides essential configuration options
+   - Required for establishing any FTP connection
+
+3. **Single Connection Management**
+   - Depends on connection configuration
+   - Provides the core connection handling logic
+   - Essential for any FTP operations
+
+## Core Functionality Layer
+4. **Basic FTP Operations**
+   - Depends on single connection management
+   - Provides fundamental file operations
+   - Enables essential workflow functionality
+
+5. **Connection Pool Implementation**
+   - Builds on single connection management
+   - Provides the foundation for high-volume operations
+   - Enables concurrent connection handling
+
+6. **Connection Health Management**
+   - Depends on connection pool implementation
+   - Provides reliability and stability
+   - Ensures continuous operation capability
+
+## Enhancement Layer
+7. **Advanced Configuration**
+   - Can be developed after basic functionality is stable
+   - Enhances connection flexibility and performance
+   - Provides fine-grained control over connections
+
+8. **Error Management**
+   - Builds on health management
+   - Crucial for production reliability
+   - Ensures consistent error handling and recovery
+
+9. **Buffer and Stream Optimization**
+   - Can be implemented after basic operations work
+   - Enhances performance for large file transfers
+   - Optimizes memory usage during transfers
+
+## Advanced Layer
+10. **Multi-Threaded Operations**
+    - Depends on connection pooling and error management
+    - Enables high-throughput parallel operations
+    - Critical for handling millions of files efficiently
+
+11. **Bulk Operations**
+    - Builds on multi-threaded operations
+    - Enables efficient batch processing
+    - Optimizes handling of large file volumes
+
+12. **Resource Management**
+    - Spans across all previous components
+    - Ensures efficient resource utilization
+    - Prevents resource leaks and exhaustion
+
+## Monitoring and Security Layer
+13. **Metrics Collection**
+    - Can be implemented independently after core functionality
+    - Provides visibility into performance and usage
+    - Enables operational monitoring
+
+14. **Monitoring Integration**
+    - Depends on metrics collection
+    - Integrates with NiFi monitoring framework
+    - Enables operational visibility and alerting
+
+15. **Security Enhancements**
+    - Can be implemented independently
+    - Provides secure connection options
+    - Enhances credential and data protection
+
+16. **Advanced Features**
+    - Depends on all previous functionality
+    - Provides enterprise-level capabilities
+    - Enables sophisticated deployment scenarios
+
+# Risks and Mitigations
+
+## Technical Challenges
+
+### Connection Stability
+**Risk**: FTP connections may drop unexpectedly due to network issues, server timeouts, or resource constraints.
+**Mitigation**: 
+- Implement robust connection validation before each operation
+- Create automatic reconnection with exponential backoff
+- Add connection health monitoring with proactive testing
+- Implement keep-alive mechanisms to prevent idle timeouts
+- Create comprehensive error recovery strategies
+
+### Performance Bottlenecks
+**Risk**: Handling millions of files may cause performance issues in NiFi flow.
+**Mitigation**:
+- Implement efficient connection pooling with proper sizing
+- Create optimized buffer management for file transfers
+- Add parallel operation capabilities with thread management
+- Implement batching mechanisms for file operations
+- Create resource usage monitoring and adaptive throttling
+
+### Resource Leaks
+**Risk**: Improper connection or resource management could lead to memory leaks or exhausted connections.
+**Mitigation**:
+- Implement strict resource cleanup in all code paths
+- Add connection tracking with automatic resource reclamation
+- Create timeout mechanisms for abandoned connections
+- Implement JVM memory monitoring during high-volume operations
+- Add circuit breakers for resource protection
+
+## Implementation Challenges
+
+### NiFi Integration Complexity
+**Risk**: Deep integration with NiFi's controller service framework may be complex and version-dependent.
+**Mitigation**:
+- Focus on implementing standard interfaces consistently
+- Create abstraction layers to isolate NiFi API dependencies
+- Implement version detection with appropriate feature enabling
+- Add comprehensive unit testing for NiFi integration points
+- Create detailed documentation for NiFi integration
+
+### FTP Protocol Variations
+**Risk**: Different FTP servers implement the protocol with subtle variations that may cause compatibility issues.
+**Mitigation**:
+- Implement server type detection and adaptation
+- Create server-specific workarounds for known issues
+- Add configurable retry strategies for different error types
+- Implement protocol negotiation with fallback options
+- Create extensive testing against multiple FTP server implementations
+
+### Concurrent Operation Safety
+**Risk**: Concurrent operations against the same FTP server may cause race conditions or server-side issues.
+**Mitigation**:
+- Implement proper synchronization for shared resources
+- Create operation sequencing for critical path operations
+- Add conflict detection and resolution mechanisms
+- Implement server load monitoring and throttling
+- Create isolation between different operation types
+
+## Operational Challenges
+
+### High-Volume Processing
+**Risk**: Handling millions of files requires careful resource management and optimization.
+**Mitigation**:
+- Implement batch processing with optimized listing
+- Create hierarchical processing strategies
+- Add work distribution across multiple connections
+- Implement progress tracking and resumable operations
+- Create adaptive throttling based on server response
+
+### Error Handling and Recovery
+**Risk**: Complex error scenarios may lead to inconsistent states or data loss.
+**Mitigation**:
+- Implement comprehensive error tracking and categorization
+- Create specific recovery strategies for different error types
+- Add transaction-like operations where possible
+- Implement operation journaling for critical operations
+- Create self-healing mechanisms for common errors
+
+### Monitoring and Diagnostics
+**Risk**: Troubleshooting issues in a high-volume, multi-connection environment may be difficult.
+**Mitigation**:
+- Implement detailed connection and operation logging
+- Create unique identifiers for tracking operations
+- Add comprehensive metrics for all important operations
+- Implement diagnostic capabilities for connection testing
+- Create visual monitoring dashboards for operational visibility
+
+# Appendix
+
+## Design Patterns and Implementation Guidelines
+
+### Connection Pool Design
+- Use Apache Commons Pool2 for connection pooling
+- Implement GenericObjectPool with custom factory
+- Create proper validation and eviction policies
+- Implement thread-safe borrowing and returning
+- Add connection tagging for tracking and metrics
+
+### Connection Health Monitoring
+- Implement non-blocking health checks
+- Create scheduled validation for idle connections
+- Add progressive backoff for reconnection attempts
+- Implement circuit breaker for failing connections
+- Create health status reporting mechanisms
+
+### FTP Operation Best Practices
+- Use streams rather than byte arrays for large files
+- Implement proper connection state validation
+- Create consistent error handling patterns
+- Add operation timeouts for all remote operations
+- Implement idempotent operations where possible
+
+## NiFi Integration Guidelines
+
+### Controller Service Interface
+```java
+@Tags({"ftp", "sftp", "remote", "connection", "pool"})
+@CapabilityDescription("Provides persistent FTP connection management with connection pooling, health monitoring, and optimized operations for handling large volumes of files.")
+public class PersistentFTPConnectionService extends AbstractControllerService implements PersistentFTPService {
+    // Standard property descriptors
+    public static final PropertyDescriptor HOSTNAME = new PropertyDescriptor.Builder()
+        .name("Hostname")
+        .description("The hostname of the FTP server")
+        .required(true)
+        .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+        .build();
+    
+    // Implementation methods
+    @Override
+    public FTPClient getConnection() throws IOException {
+        // Implementation
+    }
+    
+    @Override
+    public void releaseConnection(FTPClient client) {
+        // Implementation
+    }
+    
+    // Additional methods
+}
+```
+
+### Processor Integration Example
+```java
+@Tags({"ftp", "get", "retrieve", "files", "fetch", "remote"})
+@CapabilityDescription("Fetches files from an FTP server using a persistent connection service")
+public class PersistentFTPGet extends AbstractProcessor {
+    public static final PropertyDescriptor FTP_CONNECTION_SERVICE = new PropertyDescriptor.Builder()
+        .name("FTP Connection Service")
+        .description("Specifies the Controller Service to use for accessing the FTP connection")
+        .identifiesControllerService(PersistentFTPService.class)
+        .required(true)
+        .build();
+    
+    private PersistentFTPService ftpService;
+    
+    @Override
+    protected void init(ProcessorInitializationContext context) {
+        // Initialization
+    }
+    
+    @Override
+    public void onTrigger(ProcessContext context, ProcessSession session) throws ProcessException {
+        // Use the connection service
+        FTPClient client = null;
+        try {
+            client = ftpService.getConnection();
+            // Perform operations
+        } catch (Exception e) {
+            // Error handling
+        } finally {
+            if (client != null) {
+                ftpService.releaseConnection(client);
+            }
+        }
+    }
+}
+```
+
+## Performance Optimization Guidelines
+
+### Connection Reuse Strategy
+- Keep connections open between operations
+- Implement connection affinity for related operations
+- Create connection warmup during initialization
+- Add adaptive connection count based on load
+- Implement connection rotation for load distribution
+
+### Buffer Optimization
+- Use direct buffers for large transfers
+- Implement adaptive buffer sizing
+- Create buffer pooling for memory reuse
+- Add compression where beneficial
+- Implement streaming for large files
+
+### Multi-Threading Strategy
+- Create separate thread pools for different operation types
+- Implement work stealing queues for balanced processing
+- Add priority scheduling for important operations
+- Create backpressure mechanisms for overload protection
+- Implement thread isolation for error containment
+
+## Testing and Validation
+
+### Unit Testing Framework
+- Mock FTP server for testing
+- Connection state simulation
+- Error condition simulation
+- Performance benchmarking
+- Resource leak detection
+
+### Integration Testing
+- Live FTP server testing
+- High-volume operation testing
+- Failure mode testing
+- Recovery scenario validation
+- Performance under load testing
+
+### Benchmark Metrics
+- Connection establishment time
+- File listing performance
+- Download/upload throughput
+- Connection pool efficiency
+- Error recovery time
+</PRD>

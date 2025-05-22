@@ -1,0 +1,279 @@
+# Task ID: 10
+# Title: Integrate Service with NiFi Processors
+# Status: done
+# Dependencies: 1, 2, 3, 4, 5, 6, 7, 8, 9
+# Priority: medium
+# Description: Create integration points for the PersistentFTPService with NiFi processors, including example processor implementations.
+# Details:
+1. Finalize the PersistentFTPService implementation
+2. Create example processor for FTP listing
+3. Implement example processor for FTP get operations
+4. Create example processor for FTP put operations
+5. Implement proper service discovery and validation
+6. Add comprehensive documentation
+
+Code structure:
+```java
+// Final PersistentFTPService implementation
+@Tags({"ftp", "sftp", "remote", "connection", "pool"})
+@CapabilityDescription("Provides persistent FTP connection management with connection pooling, health monitoring, and optimized operations for handling large volumes of files.")
+public class PersistentFTPConnectionService extends AbstractControllerService implements PersistentFTPService {
+    // Property descriptors and other fields
+    
+    private FTPConnectionPool connectionPool;
+    private FTPConnectionHealthManager healthManager;
+    private FTPOperations operations;
+    private FTPErrorManager errorManager;
+    private FTPMetricsCollector metricsCollector;
+    
+    @Override
+    protected void init(ControllerServiceInitializationContext context) {
+        // Initialize service
+    }
+    
+    @OnEnabled
+    public void onEnabled(final ConfigurationContext context) {
+        // Create configuration from context
+        FTPConnectionConfig config = createConfig(context);
+        
+        // Initialize components
+        connectionPool = new FTPConnectionPool(config, getLogger());
+        healthManager = new FTPConnectionHealthManager(connectionManager, getLogger());
+        operations = new FTPOperations(connectionPool, getLogger());
+        errorManager = new FTPErrorManager(getLogger(), null);
+        metricsCollector = new FTPMetricsCollector(getLogger(), null);
+    }
+    
+    @OnDisabled
+    public void onDisabled() {
+        if (connectionPool != null) {
+            connectionPool.shutdown();
+        }
+    }
+    
+    @Override
+    public FTPClient getConnection() throws IOException {
+        return errorManager.executeWithRetry("connection", () -> {
+            return connectionPool.borrowConnection();
+        });
+    }
+    
+    @Override
+    public void releaseConnection(FTPClient client) {
+        if (client != null) {
+            connectionPool.returnConnection(client);
+        }
+    }
+    
+    @Override
+    public boolean testConnection() {
+        FTPClient client = null;
+        try {
+            client = getConnection();
+            return healthManager.testConnection(client);
+        } catch (IOException e) {
+            return false;
+        } finally {
+            releaseConnection(client);
+        }
+    }
+    
+    @Override
+    public Map<String, Object> getConnectionStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.putAll(connectionPool.getPoolMetrics());
+        stats.putAll(metricsCollector.getMetrics());
+        return stats;
+    }
+    
+    @Override
+    public List<FTPFile> listFiles(String directory, FileFilter filter) throws IOException {
+        return metricsCollector.trackOperation("list", () -> {
+            return errorManager.executeWithRetry("listing", () -> {
+                return operations.listFiles(directory, filter);
+            });
+        });
+    }
+    
+    @Override
+    public InputStream retrieveFileStream(String remotePath) throws IOException {
+        return metricsCollector.trackOperation("download", () -> {
+            return errorManager.executeWithRetry("transfer", () -> {
+                return operations.retrieveFileStream(remotePath);
+            });
+        });
+    }
+    
+    @Override
+    public boolean storeFile(String remotePath, InputStream input) throws IOException {
+        return metricsCollector.trackOperation("upload", () -> {
+            return errorManager.executeWithRetry("transfer", () -> {
+                return operations.storeFile(remotePath, input);
+            });
+        });
+    }
+    
+    @Override
+    public boolean deleteFile(String remotePath) throws IOException {
+        return metricsCollector.trackOperation("delete", () -> {
+            return errorManager.executeWithRetry("delete", () -> {
+                return operations.deleteFile(remotePath);
+            });
+        });
+    }
+    
+    @Override
+    public void disconnect(FTPClient client) {
+        if (client != null) {
+            connectionPool.invalidateConnection(client);
+        }
+    }
+    
+    private FTPConnectionConfig createConfig(ConfigurationContext context) {
+        // Create configuration from context properties
+    }
+}
+
+// Example processor using the service
+@Tags({"ftp", "get", "retrieve", "files", "fetch", "remote"})
+@CapabilityDescription("Fetches files from an FTP server using a persistent connection service")
+public class PersistentFTPGet extends AbstractProcessor {
+    public static final PropertyDescriptor FTP_CONNECTION_SERVICE = new PropertyDescriptor.Builder()
+        .name("FTP Connection Service")
+        .description("Specifies the Controller Service to use for accessing the FTP connection")
+        .identifiesControllerService(PersistentFTPService.class)
+        .required(true)
+        .build();
+    
+    public static final PropertyDescriptor REMOTE_DIRECTORY = new PropertyDescriptor.Builder()
+        .name("Remote Directory")
+        .description("The directory on the FTP server from which to retrieve files")
+        .required(true)
+        .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+        .build();
+    
+    public static final Relationship REL_SUCCESS = new Relationship.Builder()
+        .name("success")
+        .description("Files that have been successfully retrieved from the remote server")
+        .build();
+    
+    public static final Relationship REL_FAILURE = new Relationship.Builder()
+        .name("failure")
+        .description("Files that could not be retrieved from the remote server")
+        .build();
+    
+    private PersistentFTPService ftpService;
+    
+    @Override
+    protected void init(ProcessorInitializationContext context) {
+        final Set<Relationship> relationships = new HashSet<>();
+        relationships.add(REL_SUCCESS);
+        relationships.add(REL_FAILURE);
+        this.relationships = Collections.unmodifiableSet(relationships);
+        
+        final List<PropertyDescriptor> properties = new ArrayList<>();
+        properties.add(FTP_CONNECTION_SERVICE);
+        properties.add(REMOTE_DIRECTORY);
+        this.properties = Collections.unmodifiableList(properties);
+    }
+    
+    @OnScheduled
+    public void onScheduled(final ProcessContext context) {
+        ftpService = context.getProperty(FTP_CONNECTION_SERVICE).asControllerService(PersistentFTPService.class);
+    }
+    
+    @Override
+    public void onTrigger(ProcessContext context, ProcessSession session) throws ProcessException {
+        final String remoteDirectory = context.getProperty(REMOTE_DIRECTORY).getValue();
+        
+        try {
+            // List files in the directory
+            List<FTPFile> files = ftpService.listFiles(remoteDirectory, null);
+            
+            for (FTPFile file : files) {
+                if (file.isFile()) {
+                    String remotePath = remoteDirectory + "/" + file.getName();
+                    
+                    // Create a FlowFile for the remote file
+                    FlowFile flowFile = session.create();
+                    
+                    try {
+                        // Get the remote file's content
+                        flowFile = session.write(flowFile, out -> {
+                            try (InputStream in = ftpService.retrieveFileStream(remotePath)) {
+                                IOUtils.copy(in, out);
+                            }
+                        });
+                        
+                        // Set attributes
+                        Map<String, String> attributes = new HashMap<>();
+                        attributes.put("filename", file.getName());
+                        attributes.put("path", remotePath);
+                        attributes.put("size", String.valueOf(file.getSize()));
+                        attributes.put("ftp.remote.host", context.getProperty(FTP_CONNECTION_SERVICE).getValue());
+                        attributes.put("ftp.remote.directory", remoteDirectory);
+                        flowFile = session.putAllAttributes(flowFile, attributes);
+                        
+                        // Transfer to success
+                        session.transfer(flowFile, REL_SUCCESS);
+                        getLogger().info("Successfully retrieved file {}", new Object[]{remotePath});
+                    } catch (Exception e) {
+                        // Transfer to failure
+                        session.transfer(flowFile, REL_FAILURE);
+                        getLogger().error("Failed to retrieve file {}", new Object[]{remotePath, e});
+                    }
+                }
+            }
+        } catch (IOException e) {
+            getLogger().error("Failed to list files in directory {}", new Object[]{remoteDirectory, e});
+            context.yield();
+        }
+    }
+}
+```
+
+# Test Strategy:
+1. Test service integration with NiFi framework
+2. Verify proper service discovery and validation
+3. Test example processors with the service
+4. Verify proper error handling and reporting
+5. Test service lifecycle management
+6. Verify proper resource cleanup during processor/service shutdown
+
+# Subtasks:
+## 1. Service Finalization [done]
+### Dependencies: None
+### Description: Complete the implementation of the service interface and lifecycle management
+### Details:
+Finalize the service implementation by ensuring proper initialization, shutdown, and resource management. Implement service lifecycle methods, configuration validation, and error handling. Ensure thread safety and proper resource cleanup.
+
+## 2. Example Listing Processor [done]
+### Dependencies: 10.1
+### Description: Implement a processor that demonstrates listing functionality using the service
+### Details:
+Create a processor that uses the service to list resources. Implement onTrigger method to fetch listings and create FlowFiles for each item. Handle pagination, error conditions, and proper service lookup. Include proper processor documentation and property validation.
+
+## 3. Example Get Processor [done]
+### Dependencies: 10.1
+### Description: Implement a processor that demonstrates retrieving data using the service
+### Details:
+Create a processor that uses the service to retrieve specific resources. Implement content fetching based on identifiers from incoming FlowFiles or configured properties. Handle error conditions, service unavailability, and proper content type handling.
+
+## 4. Example Put Processor [done]
+### Dependencies: 10.1
+### Description: Implement a processor that demonstrates sending data using the service
+### Details:
+Create a processor that uses the service to send or update data. Implement FlowFile content handling, proper serialization, and response processing. Handle error conditions, retries, and transaction management. Include proper processor documentation.
+
+## 5. Service Discovery and Validation [done]
+### Dependencies: 10.1
+### Description: Implement service discovery mechanism and validation logic
+### Details:
+Create a robust service discovery mechanism that allows processors to find and validate service instances. Implement validation logic to ensure service configuration is correct before use. Handle dynamic reconfiguration and service availability changes.
+
+## 6. Documentation and Examples [done]
+### Dependencies: 10.1, 10.2, 10.3, 10.4, 10.5
+### Description: Create comprehensive documentation and usage examples
+### Details:
+Document the service API, configuration options, and usage patterns. Create example templates demonstrating common use cases. Include troubleshooting guides, performance considerations, and best practices. Ensure documentation is clear for both developers and end users.
+

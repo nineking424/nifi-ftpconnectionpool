@@ -1,0 +1,110 @@
+# Task ID: 5
+# Title: Implement Connection Health Management
+# Status: done
+# Dependencies: 4
+# Priority: medium
+# Description: Create a comprehensive connection health monitoring system to ensure connections remain valid and are automatically repaired when issues occur.
+# Details:
+1. Implement the FTPConnectionHealth interface
+2. Create connection testing mechanism
+3. Implement automatic repair for failed connections
+4. Add keep-alive functionality for idle connections
+5. Create connection status tracking and history
+6. Implement health status reporting
+
+Code structure:
+```java
+public class FTPConnectionHealthManager implements FTPConnectionHealth {
+    private final FTPConnectionManager connectionManager;
+    private final ComponentLog logger;
+    private final AtomicLong lastSuccessfulConnectionTime = new AtomicLong(0);
+    private final ConcurrentLinkedQueue<String> connectionErrorHistory = new ConcurrentLinkedQueue<>();
+    private final int maxErrorHistorySize = 100;
+    
+    public FTPConnectionHealthManager(FTPConnectionManager connectionManager, ComponentLog logger) {
+        this.connectionManager = connectionManager;
+        this.logger = logger;
+    }
+    
+    @Override
+    public boolean testConnection(FTPClient client) {
+        if (client == null || !client.isConnected()) {
+            return false;
+        }
+        
+        try {
+            boolean result = client.sendNoOp();
+            if (result) {
+                lastSuccessfulConnectionTime.set(System.currentTimeMillis());
+            }
+            return result;
+        } catch (IOException e) {
+            addErrorToHistory("Connection test failed: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    @Override
+    public boolean refreshConnection(FTPClient client) {
+        if (client == null) {
+            return false;
+        }
+        
+        try {
+            connectionManager.closeConnection(client);
+            // Create a new connection with the same settings
+            // This is simplified - in real implementation would need to preserve state
+            FTPClient newClient = connectionManager.createConnection();
+            // Copy relevant properties from old client to new client
+            client = newClient;
+            lastSuccessfulConnectionTime.set(System.currentTimeMillis());
+            return true;
+        } catch (IOException e) {
+            addErrorToHistory("Connection refresh failed: " + e.getMessage());
+            return false;
+        }
+    }
+    
+    @Override
+    public long getLastSuccessfulConnectionTime() {
+        return lastSuccessfulConnectionTime.get();
+    }
+    
+    @Override
+    public List<String> getConnectionErrorHistory() {
+        return new ArrayList<>(connectionErrorHistory);
+    }
+    
+    @Override
+    public HealthStatus getConnectionStatus() {
+        long lastSuccessTime = lastSuccessfulConnectionTime.get();
+        if (lastSuccessTime == 0) {
+            return HealthStatus.FAILED;
+        }
+        
+        long timeSinceLastSuccess = System.currentTimeMillis() - lastSuccessTime;
+        if (timeSinceLastSuccess > 300000) { // 5 minutes
+            return HealthStatus.FAILED;
+        } else if (timeSinceLastSuccess > 60000) { // 1 minute
+            return HealthStatus.DEGRADED;
+        } else {
+            return HealthStatus.HEALTHY;
+        }
+    }
+    
+    private void addErrorToHistory(String error) {
+        connectionErrorHistory.add(error);
+        while (connectionErrorHistory.size() > maxErrorHistorySize) {
+            connectionErrorHistory.poll();
+        }
+    }
+}
+```
+
+# Test Strategy:
+1. Test connection testing with both healthy and unhealthy connections
+2. Verify connection refresh functionality
+3. Test health status reporting under various conditions
+4. Verify error history tracking and management
+5. Test keep-alive functionality for idle connections
+6. Verify proper handling of connection state during health checks

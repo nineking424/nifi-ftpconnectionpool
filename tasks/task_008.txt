@@ -1,0 +1,183 @@
+# Task ID: 8
+# Title: Implement Error Management and Recovery
+# Status: done
+# Dependencies: 5, 6
+# Priority: medium
+# Description: Create a comprehensive error handling and recovery system to handle various failure scenarios and ensure service reliability.
+# Details:
+1. Implement comprehensive error categorization
+2. Create retry mechanisms with exponential backoff
+3. Add error reporting to NiFi bulletins
+4. Implement error recovery strategies for different error types
+5. Create connection failure handling
+6. Add circuit breaker pattern for preventing cascading failures
+
+Code structure:
+```java
+public class FTPErrorManager {
+    private final ComponentLog logger;
+    private final ProcessorNode processorNode;
+    private final Map<String, RetryPolicy> retryPolicies = new HashMap<>();
+    private final CircuitBreaker circuitBreaker;
+    
+    public FTPErrorManager(ComponentLog logger, ProcessorNode processorNode) {
+        this.logger = logger;
+        this.processorNode = processorNode;
+        
+        // Configure circuit breaker
+        this.circuitBreaker = new CircuitBreaker(
+            10, // failure threshold
+            60000, // reset timeout
+            3 // consecutive success threshold
+        );
+        
+        // Configure retry policies
+        retryPolicies.put("connection", new RetryPolicy(5, 1000, 2.0, 30000)); // max 5 retries, starting at 1s, doubling each time, max 30s
+        retryPolicies.put("transfer", new RetryPolicy(3, 5000, 1.5, 30000)); // max 3 retries, starting at 5s
+        retryPolicies.put("listing", new RetryPolicy(3, 2000, 1.5, 15000)); // max 3 retries, starting at 2s
+    }
+    
+    public <T> T executeWithRetry(String operationType, FTPOperation<T> operation) throws IOException {
+        RetryPolicy policy = retryPolicies.getOrDefault(operationType, retryPolicies.get("connection"));
+        int attempts = 0;
+        long waitTime = policy.getInitialWaitTime();
+        
+        while (true) {
+            try {
+                // Check circuit breaker
+                if (!circuitBreaker.allowRequest()) {
+                    throw new IOException("Circuit breaker open - too many failures");
+                }
+                
+                T result = operation.execute();
+                circuitBreaker.recordSuccess();
+                return result;
+            } catch (IOException e) {
+                attempts++;
+                circuitBreaker.recordFailure();
+                
+                // Categorize error
+                FTPErrorCategory category = categorizeError(e);
+                
+                // Report error
+                reportError(category, e, attempts);
+                
+                // Check if we should retry
+                if (attempts >= policy.getMaxRetries() || !isRetryable(category)) {
+                    throw e;
+                }
+                
+                // Wait before retry
+                try {
+                    Thread.sleep(waitTime);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new IOException("Retry interrupted", e);
+                }
+                
+                // Increase wait time for next attempt
+                waitTime = Math.min(waitTime * policy.getBackoffMultiplier(), policy.getMaxWaitTime());
+            }
+        }
+    }
+    
+    private FTPErrorCategory categorizeError(IOException e) {
+        String message = e.getMessage();
+        if (message == null) {
+            return FTPErrorCategory.UNKNOWN;
+        }
+        
+        if (message.contains("Connection refused") || message.contains("connect timed out")) {
+            return FTPErrorCategory.CONNECTION_REFUSED;
+        } else if (message.contains("No route to host")) {
+            return FTPErrorCategory.NETWORK_UNREACHABLE;
+        } else if (message.contains("connection reset") || message.contains("socket closed")) {
+            return FTPErrorCategory.CONNECTION_DROPPED;
+        } else if (message.contains("login failed") || message.contains("not logged in")) {
+            return FTPErrorCategory.AUTHENTICATION_FAILURE;
+        } else if (message.contains("permission denied") || message.contains("550")) {
+            return FTPErrorCategory.PERMISSION_DENIED;
+        } else if (message.contains("disk full") || message.contains("quota exceeded")) {
+            return FTPErrorCategory.STORAGE_FULL;
+        } else {
+            return FTPErrorCategory.UNKNOWN;
+        }
+    }
+    
+    private boolean isRetryable(FTPErrorCategory category) {
+        switch (category) {
+            case CONNECTION_REFUSED:
+            case NETWORK_UNREACHABLE:
+            case CONNECTION_DROPPED:
+                return true;
+            case AUTHENTICATION_FAILURE:
+            case PERMISSION_DENIED:
+            case STORAGE_FULL:
+                return false;
+            case UNKNOWN:
+            default:
+                return true;
+        }
+    }
+    
+    private void reportError(FTPErrorCategory category, IOException e, int attempt) {
+        String message = String.format("FTP error (%s) on attempt %d: %s", category, attempt, e.getMessage());
+        logger.error(message, e);
+        
+        if (processorNode != null) {
+            processorNode.getProcessGroup().getBulletinRepository().addBulletin(
+                BulletinFactory.createBulletin(
+                    "FTP", 
+                    attempt > 1 ? Severity.WARNING : Severity.ERROR, 
+                    message
+                )
+            );
+        }
+    }
+    
+    // Helper classes
+    private static class RetryPolicy {
+        private final int maxRetries;
+        private final long initialWaitTime;
+        private final double backoffMultiplier;
+        private final long maxWaitTime;
+        
+        // Constructor, getters
+    }
+    
+    private static class CircuitBreaker {
+        private final int failureThreshold;
+        private final long resetTimeout;
+        private final int successThreshold;
+        private AtomicInteger failureCount = new AtomicInteger(0);
+        private AtomicInteger successCount = new AtomicInteger(0);
+        private AtomicLong lastFailureTime = new AtomicLong(0);
+        private AtomicBoolean open = new AtomicBoolean(false);
+        
+        // Constructor, methods
+    }
+    
+    private enum FTPErrorCategory {
+        CONNECTION_REFUSED,
+        NETWORK_UNREACHABLE,
+        CONNECTION_DROPPED,
+        AUTHENTICATION_FAILURE,
+        PERMISSION_DENIED,
+        STORAGE_FULL,
+        UNKNOWN
+    }
+    
+    @FunctionalInterface
+    public interface FTPOperation<T> {
+        T execute() throws IOException;
+    }
+}
+```
+
+# Test Strategy:
+1. Test error categorization with various exception types
+2. Verify retry mechanism with simulated failures
+3. Test circuit breaker functionality
+4. Verify proper error reporting to NiFi bulletins
+5. Test recovery strategies for different error types
+6. Verify proper handling of non-retryable errors

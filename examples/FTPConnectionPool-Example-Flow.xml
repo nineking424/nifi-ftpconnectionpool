@@ -1,0 +1,551 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<template encoding-version="1.3">
+  <description>Example flow demonstrating how to use the PersistentFTPConnectionService with FTP processors</description>
+  <groupId>4f4c3c3d-0175-1000-ffff-ffffb53d8cd4</groupId>
+  <name>FTP Connection Pool Example</name>
+  <snippet>
+    <controllerServices>
+      <id>b92d8229-0175-1000-0000-000000000000</id>
+      <parentGroupId>4f4c3c3d-0175-1000-0000-000000000000</parentGroupId>
+      <bundle>
+        <artifact>nifi-ftp-connection-pool-nar</artifact>
+        <group>org.apache.nifi</group>
+        <version>1.0.0</version>
+      </bundle>
+      <comments></comments>
+      <descriptors>
+        <entry>
+          <key>Host</key>
+          <value>
+            <name>Host</name>
+            <displayName>Host</displayName>
+            <description>The FTP server hostname or IP address</description>
+            <required>true</required>
+            <sensitive>false</sensitive>
+            <expressionLanguageSupported>true</expressionLanguageSupported>
+          </value>
+        </entry>
+        <entry>
+          <key>Port</key>
+          <value>
+            <name>Port</name>
+            <displayName>Port</displayName>
+            <description>The FTP server port (default: 21)</description>
+            <defaultValue>21</defaultValue>
+            <required>true</required>
+            <sensitive>false</sensitive>
+            <expressionLanguageSupported>true</expressionLanguageSupported>
+          </value>
+        </entry>
+        <entry>
+          <key>Username</key>
+          <value>
+            <name>Username</name>
+            <displayName>Username</displayName>
+            <description>FTP username</description>
+            <required>true</required>
+            <sensitive>false</sensitive>
+            <expressionLanguageSupported>true</expressionLanguageSupported>
+          </value>
+        </entry>
+        <entry>
+          <key>Password</key>
+          <value>
+            <name>Password</name>
+            <displayName>Password</displayName>
+            <description>FTP password</description>
+            <required>true</required>
+            <sensitive>true</sensitive>
+            <expressionLanguageSupported>true</expressionLanguageSupported>
+          </value>
+        </entry>
+        <entry>
+          <key>Connection Pool Size</key>
+          <value>
+            <name>Connection Pool Size</name>
+            <displayName>Connection Pool Size</displayName>
+            <description>Number of connections to maintain in the pool</description>
+            <defaultValue>5</defaultValue>
+            <required>true</required>
+            <sensitive>false</sensitive>
+            <expressionLanguageSupported>false</expressionLanguageSupported>
+          </value>
+        </entry>
+        <entry>
+          <key>Connection Timeout</key>
+          <value>
+            <name>Connection Timeout</name>
+            <displayName>Connection Timeout</displayName>
+            <description>Timeout in milliseconds for establishing connections</description>
+            <defaultValue>30000</defaultValue>
+            <required>true</required>
+            <sensitive>false</sensitive>
+            <expressionLanguageSupported>false</expressionLanguageSupported>
+          </value>
+        </entry>
+        <entry>
+          <key>Data Timeout</key>
+          <value>
+            <name>Data Timeout</name>
+            <displayName>Data Timeout</displayName>
+            <description>Timeout in milliseconds for data transfers</description>
+            <defaultValue>30000</defaultValue>
+            <required>true</required>
+            <sensitive>false</sensitive>
+            <expressionLanguageSupported>false</expressionLanguageSupported>
+          </value>
+        </entry>
+        <entry>
+          <key>Connection Mode</key>
+          <value>
+            <name>Connection Mode</name>
+            <displayName>Connection Mode</displayName>
+            <description>Active or Passive connection mode</description>
+            <allowableValues>
+              <allowableValue>
+                <displayName>Active</displayName>
+                <value>Active</value>
+              </allowableValue>
+              <allowableValue>
+                <displayName>Passive</displayName>
+                <value>Passive</value>
+              </allowableValue>
+            </allowableValues>
+            <defaultValue>Passive</defaultValue>
+            <required>true</required>
+            <sensitive>false</sensitive>
+            <expressionLanguageSupported>false</expressionLanguageSupported>
+          </value>
+        </entry>
+      </descriptors>
+      <name>PersistentFTPConnectionService</name>
+      <state>DISABLED</state>
+      <type>org.apache.nifi.controllers.ftp.PersistentFTPConnectionService</type>
+    </controllerServices>
+    <processors>
+      <!-- ListFTP Processor -->
+      <id>d89ad268-0175-1000-0000-000000000000</id>
+      <parentGroupId>4f4c3c3d-0175-1000-0000-000000000000</parentGroupId>
+      <position>
+        <x>0</x>
+        <y>0</y>
+      </position>
+      <bundle>
+        <artifact>nifi-ftp-connection-pool-nar</artifact>
+        <group>org.apache.nifi</group>
+        <version>1.0.0</version>
+      </bundle>
+      <config>
+        <bulletinLevel>WARN</bulletinLevel>
+        <comments></comments>
+        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+        <descriptors>
+          <entry>
+            <key>FTP Connection Pool</key>
+            <value>
+              <identifiesControllerService>org.apache.nifi.controllers.ftp.FTPConnectionPool</identifiesControllerService>
+              <name>FTP Connection Pool</name>
+              <required>true</required>
+            </value>
+          </entry>
+          <entry>
+            <key>Remote Directory</key>
+            <value>
+              <name>Remote Directory</name>
+              <required>true</required>
+              <expressionLanguageSupported>true</expressionLanguageSupported>
+            </value>
+          </entry>
+          <entry>
+            <key>Recurse Subdirectories</key>
+            <value>
+              <name>Recurse Subdirectories</name>
+              <defaultValue>false</defaultValue>
+              <required>true</required>
+            </value>
+          </entry>
+          <entry>
+            <key>File Filter</key>
+            <value>
+              <name>File Filter</name>
+              <required>false</required>
+              <expressionLanguageSupported>true</expressionLanguageSupported>
+            </value>
+          </entry>
+          <entry>
+            <key>Minimum Age</key>
+            <value>
+              <name>Minimum Age</name>
+              <defaultValue>0 sec</defaultValue>
+              <required>true</required>
+            </value>
+          </entry>
+          <entry>
+            <key>Batch Size</key>
+            <value>
+              <name>Batch Size</name>
+              <defaultValue>100</defaultValue>
+              <required>true</required>
+              <expressionLanguageSupported>true</expressionLanguageSupported>
+            </value>
+          </entry>
+        </descriptors>
+        <executionNode>ALL</executionNode>
+        <lossTolerant>false</lossTolerant>
+        <penaltyDuration>30 sec</penaltyDuration>
+        <properties>
+          <entry>
+            <key>FTP Connection Pool</key>
+            <value>b92d8229-0175-1000-0000-000000000000</value>
+          </entry>
+          <entry>
+            <key>Remote Directory</key>
+            <value>/incoming</value>
+          </entry>
+          <entry>
+            <key>Recurse Subdirectories</key>
+            <value>false</value>
+          </entry>
+          <entry>
+            <key>File Filter</key>
+            <value>.*\.csv</value>
+          </entry>
+          <entry>
+            <key>Minimum Age</key>
+            <value>10 sec</value>
+          </entry>
+          <entry>
+            <key>Batch Size</key>
+            <value>100</value>
+          </entry>
+        </properties>
+        <runDurationMillis>0</runDurationMillis>
+        <schedulingPeriod>1 min</schedulingPeriod>
+        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+        <yieldDuration>1 sec</yieldDuration>
+      </config>
+      <name>ListFTP</name>
+      <relationships>
+        <autoTerminate>false</autoTerminate>
+        <name>success</name>
+      </relationships>
+      <state>STOPPED</state>
+      <style/>
+      <type>org.apache.nifi.controllers.ftp.processors.ListFTP</type>
+    </processors>
+    <processors>
+      <!-- GetFTP Processor -->
+      <id>e89ad268-0175-1000-0000-000000000000</id>
+      <parentGroupId>4f4c3c3d-0175-1000-0000-000000000000</parentGroupId>
+      <position>
+        <x>0</x>
+        <y>250</y>
+      </position>
+      <bundle>
+        <artifact>nifi-ftp-connection-pool-nar</artifact>
+        <group>org.apache.nifi</group>
+        <version>1.0.0</version>
+      </bundle>
+      <config>
+        <bulletinLevel>WARN</bulletinLevel>
+        <comments></comments>
+        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+        <descriptors>
+          <entry>
+            <key>FTP Connection Pool</key>
+            <value>
+              <identifiesControllerService>org.apache.nifi.controllers.ftp.FTPConnectionPool</identifiesControllerService>
+              <name>FTP Connection Pool</name>
+              <required>true</required>
+            </value>
+          </entry>
+          <entry>
+            <key>Remote Path</key>
+            <value>
+              <name>Remote Path</name>
+              <required>true</required>
+              <expressionLanguageSupported>true</expressionLanguageSupported>
+            </value>
+          </entry>
+          <entry>
+            <key>Completion Strategy</key>
+            <value>
+              <name>Completion Strategy</name>
+              <allowableValues>
+                <allowableValue>
+                  <displayName>Delete</displayName>
+                  <value>Delete</value>
+                </allowableValue>
+                <allowableValue>
+                  <displayName>Move</displayName>
+                  <value>Move</value>
+                </allowableValue>
+                <allowableValue>
+                  <displayName>None</displayName>
+                  <value>None</value>
+                </allowableValue>
+              </allowableValues>
+              <defaultValue>None</defaultValue>
+              <required>true</required>
+            </value>
+          </entry>
+          <entry>
+            <key>Batch Size</key>
+            <value>
+              <name>Batch Size</name>
+              <defaultValue>10</defaultValue>
+              <required>true</required>
+              <expressionLanguageSupported>true</expressionLanguageSupported>
+            </value>
+          </entry>
+        </descriptors>
+        <executionNode>ALL</executionNode>
+        <lossTolerant>false</lossTolerant>
+        <penaltyDuration>30 sec</penaltyDuration>
+        <properties>
+          <entry>
+            <key>FTP Connection Pool</key>
+            <value>b92d8229-0175-1000-0000-000000000000</value>
+          </entry>
+          <entry>
+            <key>Remote Path</key>
+            <value>${path}</value>
+          </entry>
+          <entry>
+            <key>Completion Strategy</key>
+            <value>Move</value>
+          </entry>
+          <entry>
+            <key>Move Destination Directory</key>
+            <value>/archive</value>
+          </entry>
+          <entry>
+            <key>Batch Size</key>
+            <value>10</value>
+          </entry>
+        </properties>
+        <runDurationMillis>0</runDurationMillis>
+        <schedulingPeriod>0 sec</schedulingPeriod>
+        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+        <yieldDuration>1 sec</yieldDuration>
+      </config>
+      <name>GetFTP</name>
+      <relationships>
+        <autoTerminate>false</autoTerminate>
+        <name>success</name>
+      </relationships>
+      <relationships>
+        <autoTerminate>true</autoTerminate>
+        <name>failure</name>
+      </relationships>
+      <state>STOPPED</state>
+      <style/>
+      <type>org.apache.nifi.controllers.ftp.processors.GetFTP</type>
+    </processors>
+    <processors>
+      <!-- PutFTP Processor -->
+      <id>f89ad268-0175-1000-0000-000000000000</id>
+      <parentGroupId>4f4c3c3d-0175-1000-0000-000000000000</parentGroupId>
+      <position>
+        <x>0</x>
+        <y>500</y>
+      </position>
+      <bundle>
+        <artifact>nifi-ftp-connection-pool-nar</artifact>
+        <group>org.apache.nifi</group>
+        <version>1.0.0</version>
+      </bundle>
+      <config>
+        <bulletinLevel>WARN</bulletinLevel>
+        <comments></comments>
+        <concurrentlySchedulableTaskCount>1</concurrentlySchedulableTaskCount>
+        <descriptors>
+          <entry>
+            <key>FTP Connection Pool</key>
+            <value>
+              <identifiesControllerService>org.apache.nifi.controllers.ftp.FTPConnectionPool</identifiesControllerService>
+              <name>FTP Connection Pool</name>
+              <required>true</required>
+            </value>
+          </entry>
+          <entry>
+            <key>Remote Directory</key>
+            <value>
+              <name>Remote Directory</name>
+              <required>true</required>
+              <expressionLanguageSupported>true</expressionLanguageSupported>
+            </value>
+          </entry>
+          <entry>
+            <key>Conflict Resolution Strategy</key>
+            <value>
+              <name>Conflict Resolution Strategy</name>
+              <allowableValues>
+                <allowableValue>
+                  <displayName>Fail</displayName>
+                  <value>Fail</value>
+                </allowableValue>
+                <allowableValue>
+                  <displayName>Replace</displayName>
+                  <value>Replace</value>
+                </allowableValue>
+                <allowableValue>
+                  <displayName>Rename</displayName>
+                  <value>Rename</value>
+                </allowableValue>
+              </allowableValues>
+              <defaultValue>Fail</defaultValue>
+              <required>true</required>
+            </value>
+          </entry>
+          <entry>
+            <key>Create Directory</key>
+            <value>
+              <name>Create Directory</name>
+              <allowableValues>
+                <allowableValue>
+                  <displayName>true</displayName>
+                  <value>true</value>
+                </allowableValue>
+                <allowableValue>
+                  <displayName>false</displayName>
+                  <value>false</value>
+                </allowableValue>
+              </allowableValues>
+              <defaultValue>false</defaultValue>
+              <required>true</required>
+            </value>
+          </entry>
+          <entry>
+            <key>Temporary Filename</key>
+            <value>
+              <name>Temporary Filename</name>
+              <allowableValues>
+                <allowableValue>
+                  <displayName>true</displayName>
+                  <value>true</value>
+                </allowableValue>
+                <allowableValue>
+                  <displayName>false</displayName>
+                  <value>false</value>
+                </allowableValue>
+              </allowableValues>
+              <defaultValue>true</defaultValue>
+              <required>true</required>
+            </value>
+          </entry>
+          <entry>
+            <key>Transfer Mode</key>
+            <value>
+              <name>Transfer Mode</name>
+              <allowableValues>
+                <allowableValue>
+                  <displayName>ASCII</displayName>
+                  <value>ASCII</value>
+                </allowableValue>
+                <allowableValue>
+                  <displayName>Binary</displayName>
+                  <value>Binary</value>
+                </allowableValue>
+                <allowableValue>
+                  <displayName>Auto Detect</displayName>
+                  <value>Auto Detect</value>
+                </allowableValue>
+              </allowableValues>
+              <defaultValue>Binary</defaultValue>
+              <required>true</required>
+            </value>
+          </entry>
+        </descriptors>
+        <executionNode>ALL</executionNode>
+        <lossTolerant>false</lossTolerant>
+        <penaltyDuration>30 sec</penaltyDuration>
+        <properties>
+          <entry>
+            <key>FTP Connection Pool</key>
+            <value>b92d8229-0175-1000-0000-000000000000</value>
+          </entry>
+          <entry>
+            <key>Remote Directory</key>
+            <value>/outgoing</value>
+          </entry>
+          <entry>
+            <key>Conflict Resolution Strategy</key>
+            <value>Rename</value>
+          </entry>
+          <entry>
+            <key>Create Directory</key>
+            <value>true</value>
+          </entry>
+          <entry>
+            <key>Temporary Filename</key>
+            <value>true</value>
+          </entry>
+          <entry>
+            <key>Transfer Mode</key>
+            <value>Auto Detect</value>
+          </entry>
+        </properties>
+        <runDurationMillis>0</runDurationMillis>
+        <schedulingPeriod>0 sec</schedulingPeriod>
+        <schedulingStrategy>TIMER_DRIVEN</schedulingStrategy>
+        <yieldDuration>1 sec</yieldDuration>
+      </config>
+      <name>PutFTP</name>
+      <relationships>
+        <autoTerminate>false</autoTerminate>
+        <name>success</name>
+      </relationships>
+      <relationships>
+        <autoTerminate>true</autoTerminate>
+        <name>failure</name>
+      </relationships>
+      <state>STOPPED</state>
+      <style/>
+      <type>org.apache.nifi.controllers.ftp.processors.PutFTP</type>
+    </processors>
+    <connections>
+      <id>a7654321-0175-1000-0000-000000000000</id>
+      <parentGroupId>4f4c3c3d-0175-1000-0000-000000000000</parentGroupId>
+      <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
+      <backPressureObjectThreshold>10000</backPressureObjectThreshold>
+      <destination>
+        <groupId>4f4c3c3d-0175-1000-0000-000000000000</groupId>
+        <id>e89ad268-0175-1000-0000-000000000000</id>
+        <type>PROCESSOR</type>
+      </destination>
+      <flowFileExpiration>0 sec</flowFileExpiration>
+      <labelIndex>1</labelIndex>
+      <name></name>
+      <selectedRelationships>success</selectedRelationships>
+      <source>
+        <groupId>4f4c3c3d-0175-1000-0000-000000000000</groupId>
+        <id>d89ad268-0175-1000-0000-000000000000</id>
+        <type>PROCESSOR</type>
+      </source>
+      <zIndex>0</zIndex>
+    </connections>
+    <connections>
+      <id>b7654321-0175-1000-0000-000000000000</id>
+      <parentGroupId>4f4c3c3d-0175-1000-0000-000000000000</parentGroupId>
+      <backPressureDataSizeThreshold>1 GB</backPressureDataSizeThreshold>
+      <backPressureObjectThreshold>10000</backPressureObjectThreshold>
+      <destination>
+        <groupId>4f4c3c3d-0175-1000-0000-000000000000</groupId>
+        <id>f89ad268-0175-1000-0000-000000000000</id>
+        <type>PROCESSOR</type>
+      </destination>
+      <flowFileExpiration>0 sec</flowFileExpiration>
+      <labelIndex>1</labelIndex>
+      <name></name>
+      <selectedRelationships>success</selectedRelationships>
+      <source>
+        <groupId>4f4c3c3d-0175-1000-0000-000000000000</groupId>
+        <id>e89ad268-0175-1000-0000-000000000000</id>
+        <type>PROCESSOR</type>
+      </source>
+      <zIndex>0</zIndex>
+    </connections>
+  </snippet>
+  <timestamp>05/20/2025 14:30:00 UTC</timestamp>
+</template>

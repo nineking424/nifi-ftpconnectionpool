@@ -1,0 +1,282 @@
+# Task ID: 6
+# Title: Implement Basic FTP Operations
+# Status: done
+# Dependencies: 4, 3
+# Priority: high
+# Description: Implement the core FTP operations required by the PersistentFTPService interface, including file listing, download, upload, and deletion.
+# Details:
+1. Implement file listing with filtering
+2. Create file download and streaming capabilities
+3. Implement file upload functionality
+4. Add directory manipulation operations
+5. Create file attribute handling
+6. Implement proper error handling for all operations
+
+Code structure:
+```java
+public class FTPOperations {
+    private final FTPConnectionPool connectionPool;
+    private final ComponentLog logger;
+    
+    public FTPOperations(FTPConnectionPool connectionPool, ComponentLog logger) {
+        this.connectionPool = connectionPool;
+        this.logger = logger;
+    }
+    
+    public List<FTPFile> listFiles(String directory, FileFilter filter) throws IOException {
+        FTPClient client = null;
+        try {
+            client = connectionPool.borrowConnection();
+            FTPFile[] files = client.listFiles(directory);
+            List<FTPFile> result = new ArrayList<>();
+            
+            if (files != null) {
+                for (FTPFile file : files) {
+                    if (filter == null || filter.accept(file)) {
+                        result.add(file);
+                    }
+                }
+            }
+            
+            return result;
+        } catch (IOException e) {
+            if (client != null) {
+                connectionPool.invalidateConnection(client);
+                client = null;
+            }
+            throw e;
+        } finally {
+            if (client != null) {
+                connectionPool.returnConnection(client);
+            }
+        }
+    }
+    
+    public InputStream retrieveFileStream(String remotePath) throws IOException {
+        final FTPClient client = connectionPool.borrowConnection();
+        try {
+            InputStream is = client.retrieveFileStream(remotePath);
+            if (is == null) {
+                int replyCode = client.getReplyCode();
+                String replyString = client.getReplyString();
+                connectionPool.returnConnection(client);
+                throw new IOException("Failed to retrieve file stream. Reply code: " + replyCode + ", Reply string: " + replyString);
+            }
+            
+            // Wrap the input stream to return the connection when closed
+            return new FilterInputStream(is) {
+                private boolean closed = false;
+                
+                @Override
+                public void close() throws IOException {
+                    if (closed) {
+                        return;
+                    }
+                    closed = true;
+                    
+                    try {
+                        super.close();
+                        if (!client.completePendingCommand()) {
+                            connectionPool.invalidateConnection(client);
+                            throw new IOException("Failed to complete file transfer");
+                        }
+                        connectionPool.returnConnection(client);
+                    } catch (IOException e) {
+                        connectionPool.invalidateConnection(client);
+                        throw e;
+                    }
+                }
+            };
+        } catch (IOException e) {
+            connectionPool.invalidateConnection(client);
+            throw e;
+        }
+    }
+    
+    public boolean storeFile(String remotePath, InputStream input) throws IOException {
+        FTPClient client = null;
+        try {
+            client = connectionPool.borrowConnection();
+            return client.storeFile(remotePath, input);
+        } catch (IOException e) {
+            if (client != null) {
+                connectionPool.invalidateConnection(client);
+                client = null;
+            }
+            throw e;
+        } finally {
+            if (client != null) {
+                connectionPool.returnConnection(client);
+            }
+        }
+    }
+    
+    public boolean deleteFile(String remotePath) throws IOException {
+        FTPClient client = null;
+        try {
+            client = connectionPool.borrowConnection();
+            return client.deleteFile(remotePath);
+        } catch (IOException e) {
+            if (client != null) {
+                connectionPool.invalidateConnection(client);
+                client = null;
+            }
+            throw e;
+        } finally {
+            if (client != null) {
+                connectionPool.returnConnection(client);
+            }
+        }
+    }
+}
+```
+
+# Test Strategy:
+1. Test file listing with mock FTP server
+2. Verify file filtering functionality
+3. Test file download with various file sizes
+4. Verify proper stream handling and resource cleanup
+5. Test file upload with various input sources
+6. Verify directory operations
+7. Test error handling for various failure scenarios
+
+# Subtasks:
+## 1. Implement FTP Directory Listing [done]
+### Dependencies: None
+### Description: Create functionality to list files and directories from an FTP server
+### Details:
+Implement methods to retrieve and parse directory listings from FTP servers. Include support for both detailed and simple listings. Handle connection acquisition from the pool, proper command sequencing, and parsing of server responses. Ensure proper connection release back to the pool after operation completion.
+
+## 2. Implement File Download Operations [done]
+### Dependencies: 6.1
+### Description: Create functionality to download files from an FTP server
+### Details:
+Implement methods for downloading files from FTP servers. Include support for both binary and ASCII transfer modes. Handle stream management, progress tracking, and partial downloads. Ensure proper resource cleanup in both success and failure scenarios.
+
+## 3. Implement File Upload Operations [done]
+### Dependencies: 6.1
+### Description: Create functionality to upload files to an FTP server
+### Details:
+Implement methods for uploading files to FTP servers. Support both binary and ASCII transfer modes. Include functionality for resumable uploads and progress tracking. Ensure proper handling of connection state and resource cleanup after operations complete or fail.
+<info added on 2025-05-20T08:47:12.874Z>
+Implemented enhanced file upload functionality with all required features. Created ProgressTrackingInputStream and ProgressTrackingOutputStream classes that provide real-time monitoring of upload progress through a callback interface. Developed storeFilePartial methods to support resumable uploads with restart offset capability. Implemented separate methods for binary and ASCII transfer modes to ensure proper handling of different file types. Added stream-based upload methods with restart capability for more efficient file transfers. Incorporated comprehensive validation and error checking throughout the implementation to improve reliability. All upload operations now properly manage connection state and perform resource cleanup after completion or failure.
+</info added on 2025-05-20T08:47:12.874Z>
+
+## 4. Implement Directory Manipulation [done]
+### Dependencies: 6.1
+### Description: Create functionality to create, rename, and delete directories on an FTP server
+### Details:
+Implement methods for creating, renaming, and deleting directories on FTP servers. Include proper error checking for existing directories and permission issues. Ensure operations are atomic where possible and handle server-specific quirks in directory path handling.
+<info added on 2025-05-20T08:54:19.739Z>
+I've implemented comprehensive directory manipulation functionality with the following features:
+
+1. Directory Existence Checking:
+   - Added directoryExists() method to check if a directory exists on the FTP server
+
+2. Directory-Specific Listing:
+   - Implemented listDirectories() methods to list only directories in a specified path
+   - Added support for filtering directory listings with patterns or FileFilter
+
+3. Batch Directory Operations:
+   - Added makeDirectories(List<String>) for creating multiple directories in one operation
+   - Improved makeDirectories(String) method with better path handling for creating nested directory structures
+
+4. Directory Structure Management:
+   - Implemented copyDirectoryStructure() to copy entire directory trees with or without files
+   - Enhanced deleteDirectory() with better error handling and recursive capabilities
+
+5. Directory Attributes:
+   - Added getFileInfo() and getAttributes() methods to retrieve comprehensive directory metadata
+   - Implemented getDirectorySize() to calculate total size of directory contents
+
+6. Enhanced Error Handling:
+   - Added additional error types to FTPOperationException for directory-specific errors
+   - Implemented proper connection pool management with automatic connection recovery
+
+The directory manipulation functionality now provides a complete, robust API for working with directories on FTP servers with proper error handling, connection pooling, and comprehensive operations.
+</info added on 2025-05-20T08:54:19.739Z>
+
+## 5. Implement File Attribute Handling [done]
+### Dependencies: 6.1, 6.2, 6.3
+### Description: Create functionality to get and set file attributes on an FTP server
+### Details:
+Implement methods for retrieving and modifying file attributes such as permissions, timestamps, and ownership. Handle server-specific attribute formats and commands. Include support for standard FTP attribute commands and extended commands where available.
+<info added on 2025-05-20T09:00:09.424Z>
+Implemented comprehensive file attribute handling functionality with the following features:
+
+1. Retrieving File/Directory Attributes:
+   - Enhanced getModificationTime() to handle both files and directories
+   - Implemented getFileInfo() to retrieve detailed file information objects
+   - Created getAttributes() to provide a structured map of all file attributes
+
+2. Setting Permissions:
+   - Implemented setPermissions() to modify file/directory permissions using:
+     - Octal permission format (e.g., "755")
+     - Individual permission flags (userRead, userWrite, etc.)
+   - Proper handling of server-specific SITE CHMOD commands
+
+3. Timestamp Manipulation:
+   - Added setModificationTime() to change file timestamps using:
+     - String format (YYYYMMDDhhmmss)
+     - Calendar objects for easier Java integration
+
+4. Batch Attribute Operations:
+   - Implemented setAttributes() to modify multiple attributes in a single operation
+   - Proper handling of mixed attribute types and formats
+
+5. Server Capability Detection:
+   - Added supportsFeature() to detect which attribute operations are supported
+   - Implemented getSupportedFeatures() to list all available server features
+   - Graceful fallback handling when servers don't support specific commands
+
+6. Robust Error Handling:
+   - Enhanced FTPOperationException with attribute-specific error types
+   - Proper connection pool management with automatic recovery
+   - Comprehensive input validation and error reporting
+
+The attribute handling functionality now provides a complete API for working with file and directory attributes on FTP servers, adapting to different server capabilities and handling server-specific commands properly.
+</info added on 2025-05-20T09:00:09.424Z>
+
+## 6. Implement Comprehensive Error Handling [done]
+### Dependencies: 6.1, 6.2, 6.3, 6.4, 6.5
+### Description: Create a robust error handling system for all FTP operations
+### Details:
+Implement a comprehensive error handling system that properly categorizes and reports FTP errors. Include recovery strategies for common failure scenarios such as connection drops, timeouts, and permission issues. Create meaningful exception hierarchies and ensure all operations properly propagate and handle errors.
+<info added on 2025-05-20T09:10:18.510Z>
+Implemented a comprehensive error handling system for FTP operations with the following features:
+
+1. Enhanced Exception Hierarchy:
+   - Specialized exceptions for different error types (FTPConnectionException, FTPTransferException, FTPFileOperationException)
+   - Detailed error information including error type, path, reply code, and retry status
+   - Built-in error interpretation and classification of FTP reply codes
+
+2. Auto-Recovery with Retry Mechanism:
+   - Smart retry logic based on error recoverability classification
+   - Configurable retry counts and delays for different error types
+   - Progress tracking between retry attempts
+   - Enhanced logging during retry operations
+
+3. Circuit Breaker Pattern:
+   - Implemented FTPCircuitBreaker to prevent cascading failures
+   - Automatic state transitions (CLOSED → OPEN → HALF-OPEN) based on failure patterns
+   - Separate circuit breakers for different operation types (connections, transfers, file operations)
+   - Configurable failure thresholds and recovery timeouts
+
+4. Comprehensive Error Metrics:
+   - Implemented FTPErrorMetrics for collecting and analyzing error patterns
+   - Tracking of error types, reply codes, and operation success/failure rates
+   - Support for error pattern analysis and reporting
+
+5. Error Management Facade:
+   - Created FTPErrorManager to orchestrate all error handling components
+   - Seamless integration of retry, circuit breaker, and metrics collection
+   - Context-aware error handling based on operation type
+
+6. Decorator Pattern Implementation:
+   - Developed FTPOperationsWithErrorHandling as a decorator for the base FTPOperations
+   - Non-invasive enhancement of existing code with advanced error handling
+   - Factory pattern (FTPOperationsFactory) for easy creation of operations with appropriate error handling
+
+This comprehensive error handling system provides robust operation with automatic recovery from transient failures, protection against cascading failures, and detailed error metrics for monitoring and analysis.
+</info added on 2025-05-20T09:10:18.510Z>
+
