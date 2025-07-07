@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- pom.xml에 추가해야 할 개선 사항들 -->
+
+<!-- 1. properties 섹션에 추가 -->
+<properties>
+    <!-- 기존 properties는 유지하고 아래 내용 추가 -->
+    <jacoco.version>0.8.11</jacoco.version>
+    <sonar.maven.plugin.version>3.10.0.2594</sonar.maven.plugin.version>
+    <maven.failsafe.plugin.version>3.2.2</maven.failsafe.plugin.version>
+    <assertj.version>3.24.2</assertj.version>
+</properties>
+
+<!-- 2. dependencies 섹션에 추가 -->
+<dependencies>
+    <!-- 기존 dependencies는 유지하고 아래 내용 추가 -->
+    
+    <!-- Improved testing dependencies -->
+    <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${assertj.version}</version>
+        <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-junit-jupiter</artifactId>
+        <version>${mockito.version}</version>
+        <scope>test</scope>
+    </dependency>
+    
+    <!-- Performance testing -->
+    <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-core</artifactId>
+        <version>1.37</version>
+        <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-generator-annprocess</artifactId>
+        <version>1.37</version>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+
+<!-- 3. build/plugins 섹션에 추가 -->
+<build>
+    <plugins>
+        <!-- 기존 plugins는 유지하고 아래 내용 추가 -->
+        
+        <!-- JaCoCo for code coverage -->
+        <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>prepare-agent</goal>
+                    </goals>
+                </execution>
+                <execution>
+                    <id>report</id>
+                    <phase>test</phase>
+                    <goals>
+                        <goal>report</goal>
+                    </goals>
+                </execution>
+                <execution>
+                    <id>jacoco-check</id>
+                    <goals>
+                        <goal>check</goal>
+                    </goals>
+                    <configuration>
+                        <rules>
+                            <rule>
+                                <element>PACKAGE</element>
+                                <limits>
+                                    <limit>
+                                        <counter>LINE</counter>
+                                        <value>COVEREDRATIO</value>
+                                        <minimum>0.80</minimum>
+                                    </limit>
+                                </limits>
+                            </rule>
+                        </rules>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+        
+        <!-- Integration tests -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <version>${maven.failsafe.plugin.version}</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>integration-test</goal>
+                        <goal>verify</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        
+        <!-- SonarQube integration -->
+        <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <version>${sonar.maven.plugin.version}</version>
+        </plugin>
+        
+        <!-- Enforce Maven version -->
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <version>3.4.1</version>
+            <executions>
+                <execution>
+                    <id>enforce-maven</id>
+                    <goals>
+                        <goal>enforce</goal>
+                    </goals>
+                    <configuration>
+                        <rules>
+                            <requireMavenVersion>
+                                <version>3.6.0</version>
+                            </requireMavenVersion>
+                            <requireJavaVersion>
+                                <version>1.8</version>
+                            </requireJavaVersion>
+                        </rules>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+        
+        <!-- OWASP dependency check -->
+        <plugin>
+            <groupId>org.owasp</groupId>
+            <artifactId>dependency-check-maven</artifactId>
+            <version>9.0.4</version>
+            <configuration>
+                <failBuildOnCVSS>7</failBuildOnCVSS>
+            </configuration>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>check</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+
+<!-- 4. profiles 섹션 추가 (pom.xml 끝부분, </project> 태그 앞에) -->
+<profiles>
+    <!-- Release profile for Maven Central deployment -->
+    <profile>
+        <id>release</id>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.3.0</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.6.2</version>
+                    <executions>
+                        <execution>
+                            <id>attach-javadocs</id>
+                            <goals>
+                                <goal>jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>3.1.0</version>
+                    <executions>
+                        <execution>
+                            <id>sign-artifacts</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>sign</goal>
+                            </goals>
+                            <configuration>
+                                <passphrase>${gpg.passphrase}</passphrase>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+    
+    <!-- Performance testing profile -->
+    <profile>
+        <id>benchmark</id>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.1.1</version>
+                    <executions>
+                        <execution>
+                            <id>run-benchmarks</id>
+                            <phase>integration-test</phase>
+                            <goals>
+                                <goal>exec</goal>
+                            </goals>
+                            <configuration>
+                                <classpathScope>test</classpathScope>
+                                <executable>java</executable>
+                                <arguments>
+                                    <argument>-classpath</argument>
+                                    <classpath/>
+                                    <argument>org.openjdk.jmh.Main</argument>
+                                    <argument>.*</argument>
+                                </arguments>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </build>
+    </profile>
+</profiles>
+
+<!-- 5. reporting 섹션 추가 (프로젝트 문서화용) -->
+<reporting>
+    <plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-project-info-reports-plugin</artifactId>
+            <version>3.5.0</version>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>3.6.2</version>
+            <configuration>
+                <show>public</show>
+            </configuration>
+        </plugin>
+        <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <reportSets>
+                <reportSet>
+                    <reports>
+                        <report>report</report>
+                    </reports>
+                </reportSet>
+            </reportSets>
+        </plugin>
+    </plugins>
+</reporting>
